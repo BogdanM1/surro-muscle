@@ -2,6 +2,7 @@ from flask import Flask
 from flask import request
 import tensorflow as tf
 from keras.models import load_model
+from rbf_keras.rbflayer import RBFLayer
 import numpy as np
 from sklearn.externals import joblib
 import os
@@ -22,6 +23,15 @@ models['_model']  = {}
 models['_model']['model'] = model
 models['_model']['session'] = session
 models['_model']['graph'] = graph
+
+
+model_path  = os.path.join(models_directory,"_model-rbf.h5")
+with graph.as_default(), session.as_default():
+  model = load_model(model_path, custom_objects={'RBFLayer': RBFLayer})
+models['rbf_model'] = {}
+models['rbf_model']['model'] = model
+models['rbf_model']['session'] = session
+models['rbf_model']['graph'] = graph
 
 commands = open("load_data.py").read()
 exec(commands)
@@ -158,6 +168,4 @@ def prediction_lstm():
   return result
 
 
-
-if __name__ == '__main__':
-   app.run(port = 8000, host = "147.91.204.14", debug = True)
+app.run(port = 8000, host = "147.91.204.14", debug = True)

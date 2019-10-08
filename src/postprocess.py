@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 from keras.models import load_model
+from rbf_keras.rbflayer import RBFLayer
 from sklearn.externals import joblib
 import os
 
@@ -11,13 +12,23 @@ commands = open("load_data.py").read()
 exec(commands)
 
 num_tests = 8
+
 showTestData  = False
-showDataResults = True
-showDynamicResults = True
+writeDataResults = True
+writeDynamicResults = True
+
 use_nnet = True
+use_rbf  = False
 use_lregr = False
-model_path    = '../models/_model-new.h5'
-regr_model_path    = '../models/regr.sav'
+
+model_path      = '../models/_model-new.h5'
+rbf_model_path  = '../models/_model-rbf.h5'
+regr_model_path = '../models/regr.sav'
+
+if(use_lregr):
+	model = joblib.load(regr_model_path)
+if(use_nnet):
+    model = load_model(rbf_model_path, custom_objects={'RBFLayer': RBFLayer}) if(use_rbf) else load_model(model_path)
 
 results_dir = '../results/'
 for file_name in os.listdir(results_dir):
@@ -66,27 +77,22 @@ def drawTestData(data):
 def drawTestResults():
     global results_dir
     for file_name in os.listdir(results_dir):
-        data = pd.read_csv(results_dir + file_name, sep='\s*,\s*',
-                           header=0, encoding='ascii', engine='python')
+        if not file_name.startswith('data') and not file_name.startswith('dynamic'):
+            continue
+        data = pd.read_csv(results_dir + file_name)
         time = np.array(data['time'])
         sigma = np.array(data['sigma'])
         delta_sigma = np.array(data['delta_sigma'])
         sigma_pred = np.array(data['sigma pred'])
         delta_sigma_pred = np.array(data['delta_sigma pred'])
-
         testid = [int(s) for s in file_name if s.isdigit()][0]
         if file_name.startswith('data'):
             drawGraphRes(time, sigma, sigma_pred, 'original', 'predicted', 'Stress', testid)
-            drawGraphRes(time, delta_sigma, delta_sigma_pred, 'original', 'predicted',
-                         'Stress derivative', testid)
+            drawGraphRes(time, delta_sigma, delta_sigma_pred, 'original', 'predicted','Stress derivative', testid)
         else:
             drawGraphRes(time, sigma, sigma_pred, 'original', 'predicted', 'Stress (dynamic)', testid)
             drawGraphRes(time, delta_sigma, delta_sigma_pred, 'original', 'predicted', 'Stress derivative (dynamic)', testid)
-if(use_lregr):
-	model = joblib.load(regr_model_path)
-if(use_nnet):
-    model = load_model(model_path)
-if(showDataResults):
+if(writeDataResults):
 	for i in range(0,num_tests):
 		indices       = data_noiter.index[data_noiter['testid'] == (i+1)].tolist()
 		original_data = np.array(data_noiter)[indices, :]
@@ -96,31 +102,23 @@ if(showDataResults):
 		if(use_nnet):
 		    for itarg in range(0, len(target_columns)):
 		        prediction[:, itarg] = prediction[:, itarg] * scaler.data_range_[target_columns[itarg]]  + scaler.data_min_[target_columns[itarg]]
-
 		df = pd.DataFrame(data = { 'time': original_data[:,0],
-                                   'sigma': original_data[:,target_columns[0]],
-                                   'delta_sigma': original_data[:,target_columns[1]],
-                                   'sigma pred': prediction[:, 0],
-                                   'delta_sigma pred': prediction[:,1]
-                                   })
+                                   'sigma': original_data[:,target_columns[0]], 'delta_sigma': original_data[:,target_columns[1]],
+                                   'sigma pred': prediction[:, 0],'delta_sigma pred': prediction[:,1]})
 		df.to_csv(results_dir + 'data_pred_test' + str(i+1) + '.csv', index=False)
 
-if(showDynamicResults):
+if(writeDynamicResults):
 	for i in range(4,num_tests):
 	    try:
 	        indices       = data_noiter.index[data_noiter['testid'] == (i+1)].tolist()
 	        original_data = np.array(data_noiter)[indices, :]
-	        pred_data = pd.read_csv(results_dir + "surroHuxley"+str(i+1)+".csv", sep='\s*,\s*',
-                               header=0, encoding='ascii', engine='python')
+	        pred_data = pd.read_csv(results_dir + "surroHuxley"+str(i+1)+".csv", sep='\s*,\s*', engine='python')
 	        pred_data = pred_data.iloc[::4, :]
 	        sigma_pred  = pred_data['sigma']
 	        dsigma_pred = pred_data['delta_sigma']
 	        df = pd.DataFrame(data = { 'time': original_data[:,0],
-                                       'sigma': original_data[:,target_columns[0]],
-                                       'delta_sigma': original_data[:,target_columns[1]],
-                                       'sigma pred': sigma_pred,
-                                       'delta_sigma pred': dsigma_pred
-                                       })
+                                       'sigma': original_data[:,target_columns[0]], 'delta_sigma': original_data[:,target_columns[1]],
+                                       'sigma pred': sigma_pred,'delta_sigma pred': dsigma_pred})
 	        df.to_csv(results_dir + 'dynamic_pred_test' + str(i+1) + '.csv', index=False)
 	    except:
 	        print("Error during processing test No. " + str(i+1))

@@ -5,3 +5,4 @@ models/*.txt
 models/sigma_files/*.*
 models/dsigma_files/*.*
 data/jezik.csv
+results/*

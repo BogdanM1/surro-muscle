@@ -1,6 +1,3 @@
-import numpy as np
-from keras.models import Sequential
-from keras.layers.core import Dense
 from keras.callbacks import ModelCheckpoint
 from keras.layers import Dense
 from keras.models import  Sequential
@@ -31,7 +28,7 @@ model.add(RBFLayer(100, initializer= InitCentersRandom(X), betas=2.0,input_shape
 model.add(Dense(2))
 model.compile(loss='mse',optimizer='adam')
 
-history = model.fit(X, Y, epochs = 200, batch_size = 32, validation_data = (X_val, Y_val),
+history = model.fit(X, Y, epochs = 500, batch_size = 32, validation_split = 0.2,
                     callbacks=[ModelCheckpoint(model_path, save_best_only=True)])
 
 

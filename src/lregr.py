@@ -1,7 +1,6 @@
 from sklearn.linear_model import LinearRegression
 from sklearn.externals import joblib
 from sklearn.utils import shuffle
-from sklearn.ensemble import RandomForestRegressor
 import numpy as np
 
 commands = open("load_data.py").read()

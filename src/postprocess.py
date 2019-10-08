@@ -21,7 +21,7 @@ use_nnet = True
 use_rbf  = False
 use_lregr = False
 
-model_path      = '../models/_model-new.h5'
+model_path      = '../models/_model-new2.h5'
 rbf_model_path  = '../models/_model-rbf.h5'
 regr_model_path = '../models/regr.sav'
 

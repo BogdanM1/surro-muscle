@@ -1,5 +1,5 @@
-from keras.callbacks import EarlyStopping, ModelCheckpoint
-from keras.layers import Dense, Dropout
+from keras.callbacks import ModelCheckpoint
+from keras.layers import Dense, Dropout, LeakyReLU
 from keras.models import  Sequential
 import matplotlib
 matplotlib.use('agg')
@@ -23,7 +23,7 @@ X_val = val_data[:, feature_columns]
 Y_val = val_data[:, target_columns]
 
 model = Sequential()
-model.add(Dense(50, input_dim = len(feature_columns) , activation='sigmoid'))
+model.add(Dense(50, input_dim = len(feature_columns), activation='sigmoid'))
 model.add(Dropout(0.1))
 model.add(Dense(48, activation='sigmoid'))
 model.add(Dropout(0.1))

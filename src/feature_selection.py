@@ -1,12 +1,7 @@
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
-import pandas as pd
-import numpy as np
 import seaborn as sns
-import matplotlib
-
-
 
 commands = open("load_data.py").read()
 exec(commands)

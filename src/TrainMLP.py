@@ -14,7 +14,7 @@ commands = open("load_data.py").read()
 exec(commands)
 
 model_path    = '../models/_model-new.h5'
-training_data = data_scaled[data['testid'].isin([1, 2, 3, 4, 5, 6])]
+training_data = data_scaled[data['testid'].isin([1, 2, 3, 4, 5])]
 X = training_data[:, feature_columns]
 Y = training_data[:, target_columns]
 
@@ -32,7 +32,7 @@ model.add(Dropout(0.1))
 model.add(Dense(2))
 model.compile(loss='mse', optimizer='adam')
 
-history = model.fit(X, Y, epochs = 500, batch_size = 32, validation_split=0.2,
+history = model.fit(X, Y, epochs = 500, batch_size = 32, validation_data=(X_val, Y_val),
                     callbacks=[ModelCheckpoint(model_path, save_best_only=True)])
 
 plt.plot(history.history['loss'])

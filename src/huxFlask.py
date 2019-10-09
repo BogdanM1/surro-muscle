@@ -2,7 +2,6 @@ from flask import Flask
 from flask import request
 import tensorflow as tf
 from keras.models import load_model
-from rbf_keras.rbflayer import RBFLayer
 import numpy as np
 from sklearn.externals import joblib
 import os
@@ -24,16 +23,18 @@ models['_model']['model'] = model
 models['_model']['session'] = session
 models['_model']['graph'] = graph
 
-
-model_path  = os.path.join(models_directory,"_model-rbf.h5")
+model_path  = os.path.join(models_directory,"_model-lstm.h5")
 with graph.as_default(), session.as_default():
-  model = load_model(model_path, custom_objects={'RBFLayer': RBFLayer})
-models['rbf_model'] = {}
-models['rbf_model']['model'] = model
-models['rbf_model']['session'] = session
-models['rbf_model']['graph'] = graph
+    model = load_model(model_path)
+models['lstm_model']  = {}
+models['lstm_model']['model'] = model
+models['lstm_model']['session'] = session
+models['lstm_model']['graph'] = graph
 
 commands = open("load_data.py").read()
+exec(commands)
+
+commands = open("LSTMfeatures.py").read()
 exec(commands)
 
 @app.route('/save_net', methods = ['POST'])
@@ -114,17 +115,13 @@ def prediction():
     result += str(sigma_predicted[i]) + "#" + str(dsigma_predicted[i]) + ","
   return result
 
-lstm_steps = 3
-lstm_input = np.zeros((1, lstm_steps, 2))
-lstm_feature_columns = np.array([1, 3])
-start = True
-@app.route('/start-lstm', methods=['POST'])
+@app.route('/start-lstm', methods=['GET'])
 def start():
   global start
   start = True
   return "OK"
 
-@app.route('/sigdsig_lstm', methods=['POST'])
+@app.route('/sigdsig-lstm', methods=['POST'])
 def prediction_lstm():
   global start
   global models

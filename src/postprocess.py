@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 from keras.models import load_model
-from rbf_keras.rbflayer import RBFLayer
 from sklearn.externals import joblib
 import os
 
@@ -18,17 +17,16 @@ writeDataResults = True
 writeDynamicResults = True
 
 use_nnet = True
-use_rbf  = False
+use_lstm  = False
 use_lregr = False
 
 model_path      = '../models/_model-new.h5'
-rbf_model_path  = '../models/_model-rbf.h5'
 regr_model_path = '../models/regr.sav'
 
 if(use_lregr):
 	model = joblib.load(regr_model_path)
 if(use_nnet):
-    model = load_model(rbf_model_path, custom_objects={'RBFLayer': RBFLayer}) if(use_rbf) else load_model(model_path)
+    model = load_model(model_path)
 
 results_dir = '../results/'
 for file_name in os.listdir(results_dir):

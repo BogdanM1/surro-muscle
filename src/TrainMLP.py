@@ -31,6 +31,8 @@ model.add(Dense(28, activation='sigmoid'))
 model.add(Dropout(0.1))
 model.add(Dense(2))
 model.compile(loss='mse', optimizer='adam')
+with open('../results/summary_mlp.txt','w') as fh:
+    model.summary(print_fn=lambda x: fh.write(x + '\n'))
 
 history = model.fit(X, Y, epochs = 500, batch_size = 32, validation_data=(X_val, Y_val),
                     callbacks=[ModelCheckpoint(model_path, save_best_only=True)])

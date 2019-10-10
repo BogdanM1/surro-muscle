@@ -13,7 +13,7 @@ exec(commands)
 num_tests = 8
 
 showTestData  = False
-writeDataResults = True
+writeDataResults = False
 writeDynamicResults = True
 
 use_nnet = True

@@ -133,10 +133,15 @@ def prediction_lstm():
   session    = models[netname]['session']
   
   activation = params['activation'].split(',')
-  stretch = params['stretch'].split(',')
+  stretch_prev = params['stretch_prev'].split(',')
+  sigma_prev = params['sigma_prev'].split(',')
+  delta_sigma_prev = params['delta_sigma_prev'].split(',')
+  
   activation = np.array(activation, dtype='f')
-  stretch = np.array(stretch, dtype='f')
-  input_matrix = np.column_stack((activation, stretch))
+  stretch_prev = np.array(stretch_prev, dtype='f')
+  sigma_prev = np.array(sigma_prev, dtype='f')
+  delta_sigma_prev = np.array(delta_sigma_prev, dtype='f')  
+  input_matrix = np.column_stack((activation, stretch_prev, sigma_prev, delta_sigma_prev))
   input_matrix_scaled = (input_matrix - scaler.data_min_[np.r_[lstm_feature_columns]]) / scaler.data_range_[np.r_[lstm_feature_columns]]
 
   nqp = len(activation)

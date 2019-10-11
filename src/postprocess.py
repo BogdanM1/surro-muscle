@@ -131,8 +131,10 @@ if(writeDynamicResults):
 	        sigma_pred  = pred_data['sigma']
 	        dsigma_pred = pred_data['delta_sigma']
 	        df = pd.DataFrame(data = { 'time': original_data[:,0],
-                                       'sigma': original_data[:,target_columns[0]], 'delta_sigma': original_data[:,target_columns[1]],
-                                       'sigma pred': sigma_pred,'delta_sigma pred': dsigma_pred})
+                                       'sigma': original_data[:,target_columns[0]],
+                                       'delta_sigma': original_data[:,target_columns[1]],
+                                       'sigma pred': sigma_pred,
+                                       'delta_sigma pred': dsigma_pred})
 	        df.to_csv(results_dir + 'dynamic_pred_test' + str(i+1) + '.csv', index=False)
 	    except:
 	        print("Error during processing test No. " + str(i+1))

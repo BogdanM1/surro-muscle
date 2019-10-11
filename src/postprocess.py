@@ -10,23 +10,27 @@ import os
 commands = open("load_data.py").read()
 exec(commands)
 
+commands = open("LSTMfeatures.py").read()
+exec(commands)
+
 num_tests = 8
 
 showTestData  = False
-writeDataResults = False
+writeDataResults = True
 writeDynamicResults = True
 
 use_nnet = True
-use_lstm  = False
+use_lstm  = True
 use_lregr = False
 
 model_path      = '../models/_model-new.h5'
+lstm_model_path      = '../models/_model-lstm.h5'
 regr_model_path = '../models/regr.sav'
 
 if(use_lregr):
 	model = joblib.load(regr_model_path)
 if(use_nnet):
-    model = load_model(model_path)
+    model = load_model(lstm_model_path) if(use_lstm) else load_model(model_path)
 
 results_dir = '../results/'
 for file_name in os.listdir(results_dir):
@@ -95,15 +99,27 @@ if(writeDataResults):
 		indices       = data_noiter.index[data_noiter['testid'] == (i+1)].tolist()
 		original_data = np.array(data_noiter)[indices, :]
 		pred_data     = np.array(data_scaled_noiter)[indices, :] if(use_nnet) else np.array(data_noiter)[indices, :]
-		pred_data     = pred_data[:, feature_columns]
-		prediction    = model.predict(pred_data)
+		if(use_lstm):
+		    pred_data = pred_data[:, lstm_feature_columns]
+		    lstm_prediction = model.predict(reshapeInputLSTM(pred_data, lstm_steps))
+		    prediction =  np.zeros((len(lstm_prediction), len(target_columns)))
+		else:
+		    pred_data = pred_data[:, feature_columns]
+		    prediction    = model.predict(pred_data)
+		if(use_lstm):
+		    for itarg in range(0, len(target_columns)):
+		        prediction[:, itarg] = lstm_prediction[:, lstm_steps - 1, itarg]
 		if(use_nnet):
 		    for itarg in range(0, len(target_columns)):
 		        prediction[:, itarg] = prediction[:, itarg] * scaler.data_range_[target_columns[itarg]]  + scaler.data_min_[target_columns[itarg]]
-		df = pd.DataFrame(data = { 'time': original_data[:,0],
-                                   'sigma': original_data[:,target_columns[0]], 'delta_sigma': original_data[:,target_columns[1]],
-                                   'sigma pred': prediction[:, 0],'delta_sigma pred': prediction[:,1]})
+		nlen = len(prediction)
+		df = pd.DataFrame(data = { 'time': original_data[0:nlen,0],
+                                   'sigma': original_data[0:nlen,target_columns[0]],
+                                   'delta_sigma': original_data[0:nlen,target_columns[1]],
+                                   'sigma pred': prediction[:, 0],
+                                   'delta_sigma pred': prediction[:,1]})
 		df.to_csv(results_dir + 'data_pred_test' + str(i+1) + '.csv', index=False)
+
 
 if(writeDynamicResults):
 	for i in range(4,num_tests):

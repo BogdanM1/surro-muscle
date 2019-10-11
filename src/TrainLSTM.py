@@ -16,18 +16,8 @@ exec(commands)
 commands = open("LSTMfeatures.py").read()
 exec(commands)
 
-def reshapeInputLSTM (data, lstm_steps):
-  data_count = len(data) - lstm_steps + 1
-  nfeatures = len(data[0])
-  outdata   = np.empty([data_count, lstm_steps, nfeatures])
-  for i in range(0,data_count):
-    chunk         = data[i:(i+lstm_steps), :]
-    outdata[i,:,:]  = chunk
-  return (outdata)
-
-
 model_path    = '../models/_model-lstm.h5'
-training_data = data_scaled_noiter[data_noiter['testid'].isin([1, 2, 3, 4, 5, 6])]
+training_data = data_scaled[data['testid'].isin([1, 2, 3, 4, 5, 6])]
 X = training_data[:, lstm_feature_columns]
 Y = training_data[:, target_columns]
 

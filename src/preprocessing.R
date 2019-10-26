@@ -1,6 +1,6 @@
-removeIterations <- function(data)
+checkConverged <- function(data)
 {
-  data <-  data[!rev(duplicated(rev(data$step))),]
+  data$converged <-  !rev(duplicated(rev(data$step)))
   return(data)
 }
 
@@ -10,24 +10,24 @@ removeGaussPoint <- function(data)
   return(data) 
 }
 
-columnsToSelect <- c(6,7,8,9,11,10,12,4)
+columnsToSelect <- c(6,7,8,9,10,12,11,13,14,4)
 dt <- 0.001
 
 # merge data
 data <- read.csv("../data/tests/test1.csv")
 data <- removeGaussPoint(data)
-#data <- removeIterations(data)
+data <- checkConverged(data)
 time <- data$step * dt
 data <- data[,columnsToSelect]
 data <- cbind(time, data)
 data$testid <- 1
 dataFull <- data
 
-for (i in c(2:8))
+for (i in c(2:15))
 { 
   data <- read.csv(sprintf("../data/tests/test%d.csv",i))
   data <- removeGaussPoint(data)
- # data <- removeIterations(data)  
+  data <- checkConverged(data)  
   time <- data$step * dt  
   data <- data[,columnsToSelect]  
   data <- cbind(time, data)
@@ -35,7 +35,9 @@ for (i in c(2:8))
   dataFull <- rbind(dataFull, data)
 }
 
+dataFull <- na.omit(dataFull)
 write.csv(dataFull, file="../data/dataMexie.csv",row.names=F, quote=F)
+write.csv(dataFull[dataFull$converged,], file="../data/dataMexieNoIter.csv",row.names=F, quote=F)
 
 # iterations <- data %>% count(step)
 # write.csv(iterations, file="iterations.csv",row.names=F, quote=F)

@@ -13,7 +13,7 @@ exec(commands)
 commands = open("LSTMfeatures.py").read()
 exec(commands)
 
-num_tests = 8
+num_tests = 15
 
 showTestData  = False
 writeDataResults = True
@@ -76,6 +76,12 @@ def drawTestData(data):
         drawGraph(time, sigma, 'Sigma', '[pN/nm^2]',i)
         drawGraph(time, delta_sigma, 'Delta sigma', '[pN/nm^2]',i)
 
+def list_to_num(numList):         
+    s = map(str, numList)   
+    s = ''.join(s)          
+    s = int(s)              
+    return s
+	
 def drawTestResults():
     global results_dir
     for file_name in os.listdir(results_dir):
@@ -87,7 +93,7 @@ def drawTestResults():
         delta_sigma = np.array(data['delta_sigma'])
         sigma_pred = np.array(data['sigma pred'])
         delta_sigma_pred = np.array(data['delta_sigma pred'])
-        testid = [int(s) for s in file_name if s.isdigit()][0]
+        testid = list_to_num([int(s) for s in file_name if s.isdigit()])
         if file_name.startswith('data'):
             drawGraphRes(time, sigma, sigma_pred, 'original', 'predicted', 'Stress', testid)
             drawGraphRes(time, delta_sigma, delta_sigma_pred, 'original', 'predicted','Stress derivative', testid)
@@ -122,7 +128,7 @@ if(writeDataResults):
 
 
 if(writeDynamicResults):
-	for i in range(4,num_tests):
+	for i in range(1,num_tests):
 	    try:
 	        indices       = data_noiter.index[data_noiter['testid'] == (i+1)].tolist()
 	        original_data = np.array(data_noiter)[indices, :]

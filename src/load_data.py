@@ -1,8 +1,8 @@
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
-feature_columns = [1, 2, 3, 4, 5]
-target_columns  = [6, 7]
+feature_columns = [1, 2, 3, 4, 5, 6]
+target_columns  = [7, 8]
 data          = pd.read_csv("../data/dataMexie.csv")
 data_noiter   = pd.read_csv("../data/dataMexieNoIter.csv")
 

@@ -10,7 +10,7 @@ import os
 commands = open("load_data.py").read()
 exec(commands)
 
-commands = open("LSTMfeatures.py").read()
+commands = open("time_series_features.py").read()
 exec(commands)
 
 num_tests = 15
@@ -20,17 +20,17 @@ writeDataResults = True
 writeDynamicResults = True
 
 use_nnet = True
-use_lstm  = True
+use_time_series  = True
 use_lregr = False
 
 model_path      = '../models/_model-new.h5'
-lstm_model_path      = '../models/_model-lstm.h5'
+time_series_model_path      = '../models/_model-time_series-rnn.h5'
 regr_model_path = '../models/regr.sav'
 
 if(use_lregr):
 	model = joblib.load(regr_model_path)
 if(use_nnet):
-    model = load_model(lstm_model_path) if(use_lstm) else load_model(model_path)
+    model = load_model(time_series_model_path) if(use_time_series) else load_model(model_path)
 
 results_dir = '../results/'
 for file_name in os.listdir(results_dir):
@@ -105,16 +105,16 @@ if(writeDataResults):
 		indices       = data_noiter.index[data_noiter['testid'] == (i+1)].tolist()
 		original_data = np.array(data_noiter)[indices, :]
 		pred_data     = np.array(data_scaled_noiter)[indices, :] if(use_nnet) else np.array(data_noiter)[indices, :]
-		if(use_lstm):
-		    pred_data = pred_data[:, lstm_feature_columns]
-		    lstm_prediction = model.predict(reshapeInputLSTM(pred_data, lstm_steps))
-		    prediction =  np.zeros((len(lstm_prediction), len(target_columns)))
+		if(use_time_series):
+		    pred_data = pred_data[:, time_series_feature_columns]
+		    time_series_prediction = model.predict(InputToTimeSeries(pred_data, time_series_steps))
+		    prediction =  np.zeros((len(time_series_prediction), len(target_columns)))
 		else:
 		    pred_data = pred_data[:, feature_columns]
 		    prediction    = model.predict(pred_data)
-		if(use_lstm):
+		if(use_time_series):
 		    for itarg in range(0, len(target_columns)):
-		        prediction[:, itarg] = lstm_prediction[:, lstm_steps - 1, itarg]
+		        prediction[:, itarg] = time_series_prediction[:, time_series_steps - 1, itarg]
 		if(use_nnet):
 		    for itarg in range(0, len(target_columns)):
 		        prediction[:, itarg] = prediction[:, itarg] * scaler.data_range_[target_columns[itarg]]  + scaler.data_min_[target_columns[itarg]]

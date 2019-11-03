@@ -7,7 +7,7 @@ commands = open("load_data.py").read()
 exec(commands)
 
 model_path    = '../models/regr.sav'
-indices       = data.index[data['testid'].isin([1, 2, 3, 4, 5, 6])].tolist()
+indices       = data.index[data['testid'].isin(range(1,14,2))].tolist()
 training_data = shuffle(np.array(data)[indices, :])
 X = training_data[:, feature_columns]
 Y = training_data[:, target_columns]

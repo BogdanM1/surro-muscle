@@ -24,19 +24,20 @@ models['_model']['model'] = model
 models['_model']['session'] = session
 models['_model']['graph'] = graph
 
-commands = open("LSTMfeatures.py").read()
+commands = open("time_series_features.py").read()
 exec(commands)
 
-lstm_start = True
+time_series_start = True
 nqp = 4
-lstm_input  = np.zeros((1, lstm_steps, len(lstm_feature_columns)))
-model_path  = os.path.join(models_directory,"_model-lstm.h5")
+time_series_input  = np.zeros((1, time_series_steps, len(time_series_feature_columns)))
+
+model_path  = os.path.join(models_directory,"_model-time_series-rnn.h5")
 with graph.as_default(), session.as_default():
     model = load_model(model_path)
-models['lstm_model']  = {}
-models['lstm_model']['model'] = model
-models['lstm_model']['session'] = session
-models['lstm_model']['graph'] = graph
+models['time_series_model']  = {}
+models['time_series_model']['model'] = model
+models['time_series_model']['session'] = session
+models['time_series_model']['graph'] = graph
 
 @app.route('/save_net', methods = ['POST'])
 def loadNet():
@@ -120,18 +121,18 @@ def prediction():
     result += str(sigma_predicted[i]) + "#" + str(dsigma_predicted[i]) + ","
   return result
 
-@app.route('/start-lstm', methods=['GET'])
+@app.route('/start-time_series', methods=['POST'])
 def start():
-  global lstm_start, nqp, lstm_input
-  lstm_start = True
-  lstm_input  = np.zeros((nqp, lstm_steps, len(lstm_feature_columns)))
+  global time_series_start, nqp, time_series_input
+  time_series_start = True
+  params     = request.form.to_dict()
+  nqp        = int(params['nqp'])
+  time_series_input = np.zeros((nqp, time_series_steps, len(time_series_feature_columns)))
   return "OK"
 
-@app.route('/sigdsig-lstm', methods=['POST'])
-def prediction_lstm():
-  global lstm_start
-  global models
-  global nqp
+@app.route('/sigdsig-time_series', methods=['POST'])
+def prediction_time_series():
+  global time_series_start, models, nqp
 
   params     = request.form.to_dict()
   netname    = params['netname']
@@ -150,25 +151,25 @@ def prediction_lstm():
   sigma_prev = np.array(sigma_prev, dtype='f')
   delta_sigma_prev = np.array(delta_sigma_prev, dtype='f')  
   input_matrix = np.column_stack((activation, stretch, sigma_prev, delta_sigma_prev))
-  input_matrix_scaled = (input_matrix - scaler.data_min_[np.r_[lstm_feature_columns]]) / scaler.data_range_[np.r_[lstm_feature_columns]]
+  input_matrix_scaled = (input_matrix - scaler.data_min_[np.r_[time_series_feature_columns]]) / scaler.data_range_[np.r_[time_series_feature_columns]]
 
   predicted = np.zeros((nqp, 2))
-  if lstm_start:
-      lstm_start = False
+  if time_series_start:
+      time_series_start = False
       for i in range(0, nqp):
-        for j in range(0, lstm_steps):
-          lstm_input[i, j, :] = input_matrix_scaled[i, :]
+        for j in range(0, time_series_steps):
+          time_series_input[i, j, :] = input_matrix_scaled[i, :]
   else:
       if(int(converged) == 1):
         for i in range(0, nqp):
-          for j in range(0, lstm_steps - 1):
-              lstm_input[i, j, :] = lstm_input[i, j + 1, :]
+          for j in range(0, time_series_steps - 1):
+              time_series_input[i, j, :] = time_series_input[i, j + 1, :]
       for i in range(0, nqp):
-        lstm_input[i, lstm_steps - 1,] = input_matrix_scaled[i, :]
+        time_series_input[i, time_series_steps - 1,] = input_matrix_scaled[i, :]
 
   with graph.as_default(), session.as_default():
-    lstm_predicted = model.predict(lstm_input)
-    predicted[:, :] = lstm_predicted[:, lstm_steps-1, :]
+    time_series_predicted = model.predict(time_series_input)
+    predicted[:, :] = time_series_predicted[:, time_series_steps-1, :]
 
   sigma_predicted  = predicted[:, 0] * scaler.data_range_[target_columns[0]] + scaler.data_min_[target_columns[0]]
   dsigma_predicted = predicted[:, 1] * scaler.data_range_[target_columns[1]] + scaler.data_min_[target_columns[1]]

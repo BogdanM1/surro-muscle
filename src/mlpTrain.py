@@ -1,9 +1,6 @@
 from keras.callbacks import ModelCheckpoint
 from keras.layers import Dense, Dropout, LeakyReLU
 from keras.models import  Sequential
-import matplotlib
-matplotlib.use('agg')
-import matplotlib.pyplot as plt
 
 from numpy.random import seed
 seed(1)
@@ -14,11 +11,11 @@ commands = open("load_data.py").read()
 exec(commands)
 
 model_path    = '../models/_model-new.h5'
-training_data = data_scaled[data['testid'].isin([1,3,4,5,7,9,11,12,14])]
+training_data = data_scaled[data['testid'].isin(range(1,14,2))]
 X = training_data[:, feature_columns]
 Y = training_data[:, target_columns]
 
-val_data = data_scaled[data['testid'].isin([2,6,8,10,13])]
+val_data = data_scaled[data['testid'].isin(range(2,15,2))]
 X_val = val_data[:, feature_columns]
 Y_val = val_data[:, target_columns]
 

@@ -1,5 +1,5 @@
 from keras.callbacks import ModelCheckpoint
-from keras.layers import Dense, Dropout, LSTM
+from keras.layers import Dense, Dropout, SimpleRNN
 from keras.models import  Sequential
 from numpy.random import seed
 seed(1)
@@ -9,7 +9,7 @@ set_random_seed(2)
 commands = open("time_series_features.py").read()
 exec(commands)
 
-model_path    = '../models/_model-time_series-lstm.h5'
+model_path    = '../models/_model-time_series-rnn.h5'
 
 X = []
 Y = []
@@ -34,17 +34,17 @@ X_val = np.array(X_val)
 Y_val = np.array(Y_val)
 
 model = Sequential()
-model.add(LSTM(60, input_shape = (time_series_steps, len(time_series_feature_columns)), activation='relu', return_sequences=True))
+model.add(SimpleRNN(60, input_shape = (time_series_steps, len(time_series_feature_columns)), activation='relu', return_sequences=True))
 model.add(Dropout(0.1))
-model.add(LSTM(30, activation='relu', return_sequences=True))
+model.add(SimpleRNN(30, activation='relu', return_sequences=True))
 model.add(Dropout(0.1))
 model.add(Dense(2))
 model.compile(loss='mse', optimizer='adam')
-with open('../results/summary_lstm.txt','w') as fh:
+with open('../results/summary_rnn.txt','w') as fh:
     model.summary(print_fn=lambda x: fh.write(x + '\n'))
 
 history = model.fit(X, Y, epochs = 500, batch_size = 32, validation_data=(X_val, Y_val),
                     callbacks=[ModelCheckpoint(model_path, monitor='val_loss', save_best_only=True)])
 
-pd.DataFrame(history.history).to_csv("../results/train-lstm.csv")
+pd.DataFrame(history.history).to_csv("../results/train-rnn.csv")
 

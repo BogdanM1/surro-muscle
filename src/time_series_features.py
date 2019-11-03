@@ -2,11 +2,10 @@ commands = open("load_data.py").read()
 exec(commands)
 
 import numpy as np
-lstm_steps = 3
-lstm_feature_columns = np.array([2, 4, 5, 6])
-lstm_input = np.zeros((1, lstm_steps, len(lstm_feature_columns)))
+time_series_steps = 10
+time_series_feature_columns = np.array([2, 4, 5, 6]) 
 
-def reshapeInputLSTM (data, lstm_steps, converged = None):
+def InputToTimeSeries(data, lstm_steps, converged = None):
   data_count = len(data) - lstm_steps + 1
   nfeatures = len(data[0])
   outdata   = np.empty([data_count, lstm_steps, nfeatures])

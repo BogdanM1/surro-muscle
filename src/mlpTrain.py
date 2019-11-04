@@ -11,11 +11,11 @@ commands = open("load_data.py").read()
 exec(commands)
 
 model_path    = '../models/_model-new.h5'
-training_data = data_scaled[data['testid'].isin(range(1,14,2))]
+training_data = data_scaled[data['testid'].isin(range(4,14,1))]
 X = training_data[:, feature_columns]
 Y = training_data[:, target_columns]
 
-val_data = data_scaled[data['testid'].isin(range(2,15,2))]
+val_data = data_scaled[data['testid'].isin(range(1,4,1))]
 X_val = val_data[:, feature_columns]
 Y_val = val_data[:, target_columns]
 

@@ -31,7 +31,7 @@ time_series_start = True
 nqp = 4
 time_series_input  = np.zeros((1, time_series_steps, len(time_series_feature_columns)))
 
-model_path  = os.path.join(models_directory,"_model-time_series-rnn.h5")
+model_path  = os.path.join(models_directory,"_model-time_series.h5")
 with graph.as_default(), session.as_default():
     model = load_model(model_path)
 models['time_series_model']  = {}
@@ -169,7 +169,10 @@ def prediction_time_series():
 
   with graph.as_default(), session.as_default():
     time_series_predicted = model.predict(time_series_input)
-    predicted[:, :] = time_series_predicted[:, time_series_steps-1, :]
+    if(len(predicted.shape)==2):
+        predicted[:,:] = time_series_predicted[:,:]
+    else:
+        predicted[:, :] = time_series_predicted[:, time_series_steps-1, :]
 
   sigma_predicted  = predicted[:, 0] * scaler.data_range_[target_columns[0]] + scaler.data_min_[target_columns[0]]
   dsigma_predicted = predicted[:, 1] * scaler.data_range_[target_columns[1]] + scaler.data_min_[target_columns[1]]

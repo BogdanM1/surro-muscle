@@ -24,7 +24,7 @@ use_time_series  = True
 use_lregr = False
 
 model_path      = '../models/_model-new.h5'
-time_series_model_path      = '../models/_model-time_series-rnn.h5'
+time_series_model_path      = '../models/_model-time_series.h5'
 regr_model_path = '../models/regr.sav'
 
 if(use_lregr):
@@ -112,7 +112,7 @@ if(writeDataResults):
 		else:
 		    pred_data = pred_data[:, feature_columns]
 		    prediction    = model.predict(pred_data)
-		if(use_time_series):
+		if(len(prediction.shape) == 3):
 		    for itarg in range(0, len(target_columns)):
 		        prediction[:, itarg] = time_series_prediction[:, time_series_steps - 1, itarg]
 		if(use_nnet):

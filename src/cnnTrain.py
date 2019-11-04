@@ -13,7 +13,7 @@ model_path    = '../models/_model-time_series.h5'
 
 X = []
 Y = []
-for i in range(1,6,1):
+for i in range(4,14,1):
     indices = data['testid'].isin([i])
     for x in InputToTimeSeries(data_scaled[indices][:,time_series_feature_columns], time_series_steps, np.array(data.loc[indices,'converged'])):
         X.append(x)
@@ -24,7 +24,7 @@ Y = np.array(Y)
 
 X_val = []
 Y_val = []
-for i in range(7,8,1):
+for i in range(1,4,1):
     indices = data_noiter['testid'].isin([i])
     for x in InputToTimeSeries(data_scaled_noiter[indices][:, time_series_feature_columns], time_series_steps):
         X_val.append(x)
@@ -34,7 +34,7 @@ X_val = np.array(X_val)
 Y_val = np.array(Y_val)
 
 model = Sequential()
-model.add(Conv1D(filters=64, kernel_size=2, input_shape = (time_series_steps, len(time_series_feature_columns)), activation='sigmoid'))
+model.add(Conv1D(filters=64, kernel_size=2, input_shape = (time_series_steps, len(time_series_feature_columns)), activation='relu'))
 model.add(MaxPooling1D(pool_size=2))
 model.add(Dropout(0.1))
 model.add(Flatten())

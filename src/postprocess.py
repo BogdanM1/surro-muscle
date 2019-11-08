@@ -7,10 +7,7 @@ from keras.models import load_model
 from sklearn.externals import joblib
 import os
 
-commands = open("load_data.py").read()
-exec(commands)
-
-commands = open("time_series_features.py").read()
+commands = open("timeSeries.py").read()
 exec(commands)
 
 num_tests = 15
@@ -19,18 +16,10 @@ showTestData  = False
 writeDataResults = True
 writeDynamicResults = True
 
-use_nnet = True
+model_path      = '../models/model-gru.h5'
+use_nnet = model_path.endswith('.h5')
 use_time_series  = True
-use_lregr = False
-
-model_path      = '../models/_model-new.h5'
-time_series_model_path      = '../models/_model-time_series.h5'
-regr_model_path = '../models/regr.sav'
-
-if(use_lregr):
-	model = joblib.load(regr_model_path)
-if(use_nnet):
-    model = load_model(time_series_model_path) if(use_time_series) else load_model(model_path)
+model = load_model(model_path) if(use_nnet) else joblib.load(model_path)
 
 results_dir = '../results/'
 for file_name in os.listdir(results_dir):
@@ -100,6 +89,7 @@ def drawTestResults():
         else:
             drawGraphRes(time, sigma, sigma_pred, 'original', 'predicted', 'Stress (dynamic)', testid)
             drawGraphRes(time, delta_sigma, delta_sigma_pred, 'original', 'predicted', 'Stress derivative (dynamic)', testid)
+            
 if(writeDataResults):
 	for i in range(0,num_tests):
 		indices       = data_noiter.index[data_noiter['testid'] == (i+1)].tolist()
@@ -107,43 +97,48 @@ if(writeDataResults):
 		pred_data     = np.array(data_scaled_noiter)[indices, :] if(use_nnet) else np.array(data_noiter)[indices, :]
 		if(use_time_series):
 		    pred_data = pred_data[:, time_series_feature_columns]
-		    time_series_prediction = model.predict(InputToTimeSeries(pred_data, time_series_steps))
-		    prediction =  np.zeros((len(time_series_prediction), len(target_columns)))
+		    prediction_tmp = model.predict(InputToTimeSeries(pred_data, time_series_steps))
 		else:
 		    pred_data = pred_data[:, feature_columns]
-		    prediction    = model.predict(pred_data)
-		if(len(prediction.shape) == 3):
+		    prediction_tmp = model.predict(pred_data)
+		if(len(prediction_tmp.shape) == 3):
+		    prediction = np.zeros((prediction_tmp.shape[0], prediction_tmp.shape[2]))
 		    for itarg in range(0, len(target_columns)):
-		        prediction[:, itarg] = time_series_prediction[:, time_series_steps - 1, itarg]
+		        prediction[:, itarg] = prediction_tmp[:, time_series_steps - 1, itarg]
+		else:
+		    prediction = prediction_tmp
 		if(use_nnet):
 		    for itarg in range(0, len(target_columns)):
 		        prediction[:, itarg] = prediction[:, itarg] * scaler.data_range_[target_columns[itarg]]  + scaler.data_min_[target_columns[itarg]]
 		nlen = len(prediction)
 		df = pd.DataFrame(data = { 'time': original_data[0:nlen,0],
-                                   'sigma': original_data[0:nlen,target_columns[0]],
-                                   'delta_sigma': original_data[0:nlen,target_columns[1]],
-                                   'sigma pred': prediction[:, 0],
-                                   'delta_sigma pred': prediction[:,1]})
+                               'sigma': original_data[0:nlen,target_columns[0]],
+                               'delta_sigma': original_data[0:nlen,target_columns[1]],
+                               'sigma pred': prediction[:, 0],
+                               'delta_sigma pred': prediction[:,1]})
 		df.to_csv(results_dir + 'data_pred_test' + str(i+1) + '.csv', index=False)
 
 
 if(writeDynamicResults):
-	for i in range(1,num_tests):
+	for i in range(0,num_tests):
 	    try:
 	        indices       = data_noiter.index[data_noiter['testid'] == (i+1)].tolist()
 	        original_data = np.array(data_noiter)[indices, :]
-	        pred_data = pd.read_csv(results_dir + "surroHuxley"+str(i+1)+".csv", sep='\s*,\s*', engine='python')
-	        pred_data = pred_data.iloc[::4, :]
-	        sigma_pred  = pred_data['sigma']
-	        dsigma_pred = pred_data['delta_sigma']
-	        df = pd.DataFrame(data = { 'time': original_data[:,0],
-                                       'sigma': original_data[:,target_columns[0]],
-                                       'delta_sigma': original_data[:,target_columns[1]],
-                                       'sigma pred': sigma_pred,
-                                       'delta_sigma pred': dsigma_pred})
+	        prediction = pd.read_csv(results_dir + "surroHuxley"+str(i+1)+".csv", sep='\s*,\s*', engine='python')
+	        prediction = np.array(prediction.loc[::4, ['sigma','delta_sigma']])
+        	nlen = len(prediction)
+        	df = pd.DataFrame(data = { 'time': original_data[0:nlen,0],
+                                     'sigma': original_data[0:nlen,target_columns[0]],
+                                     'delta_sigma': original_data[0:nlen,target_columns[1]],
+                                     'sigma pred': prediction[:, 0],
+                                     'delta_sigma pred': prediction[:,1]})
 	        df.to_csv(results_dir + 'dynamic_pred_test' + str(i+1) + '.csv', index=False)
 	    except:
 	        print("Error during processing test No. " + str(i+1))
 
 if(showTestData): drawTestData(data_noiter)
 drawTestResults()
+results_dir = '../results/'
+for file_name in os.listdir(results_dir):
+    if(file_name.endswith('.csv')):
+        os.unlink(results_dir + file_name)

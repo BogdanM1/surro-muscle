@@ -1,4 +1,4 @@
-commands = open("load_data.py").read()
+commands = open("loadData.py").read()
 exec(commands)
 
 import numpy as np

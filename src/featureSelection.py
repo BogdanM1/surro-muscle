@@ -3,7 +3,7 @@ matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-commands = open("load_data.py").read()
+commands = open("loadData.py").read()
 exec(commands)
 
 data  = data.iloc[:,feature_columns + target_columns]

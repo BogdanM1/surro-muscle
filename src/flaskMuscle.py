@@ -9,35 +9,25 @@ import sys
 
 app = Flask(__name__)
 
-lregr_path = '../models/regr.sav'
-lregr_model = joblib.load(lregr_path)
-
-models_directory = "../models/"
-models = {}
-model_path  = os.path.join(models_directory,"_model-new.h5")
-session = tf.Session()
-graph = tf.get_default_graph()
-with graph.as_default(), session.as_default():
-    model = load_model(model_path)
-models['_model']  = {}
-models['_model']['model'] = model
-models['_model']['session'] = session
-models['_model']['graph'] = graph
-
-commands = open("time_series_features.py").read()
+commands = open("timeSeries.py").read()
 exec(commands)
 
 time_series_start = True
 nqp = 4
 time_series_input  = np.zeros((1, time_series_steps, len(time_series_feature_columns)))
 
-model_path  = os.path.join(models_directory,"_model-time_series.h5")
-with graph.as_default(), session.as_default():
-    model = load_model(model_path)
-models['time_series_model']  = {}
-models['time_series_model']['model'] = model
-models['time_series_model']['session'] = session
-models['time_series_model']['graph'] = graph
+models_directory = "../models/"
+models = {}
+for file_name in os.listdir(models_directory):
+  model_path  = os.path.join(models_directory,file_name)
+  session = tf.Session()
+  graph = tf.get_default_graph()
+  with graph.as_default(), session.as_default():
+      model = load_model(model_path) if(file_name.endswith('.h5')) else joblib.load(model_path)
+  models[file_name]  = {}
+  models[file_name]['model'] = model
+  models[file_name]['session'] = session
+  models[file_name]['graph'] = graph
 
 @app.route('/save_net', methods = ['POST'])
 def loadNet():
@@ -45,7 +35,7 @@ def loadNet():
   params = request.form.to_dict()
   netname = params['netname']
   model_export = request.files['network']
-  model_path = os.path.join(models_directory, netname + ".h5")
+  model_path = os.path.join(models_directory, netname)
   model_export.save(model_path)
   graph = tf.get_default_graph()
   session = tf.Session()
@@ -57,33 +47,6 @@ def loadNet():
   models[netname]['graph'] = graph
   return "OK"
 
-@app.route('/sigdsig-regr', methods=['POST'])
-def regr_prediction():
-  params     = request.form.to_dict()
-
-  activation_prev = params['activation_prev'].split(',')
-  activation = params['activation'].split(',')
-  stretch_prev = params['stretch_prev'].split(',')
-  stretch = params['stretch'].split(',')
-  sigma_prev = params['sigma_prev'].split(',')
-  delta_sigma_prev = params['delta_sigma_prev'].split(',')
-
-  activation_prev = np.array(activation_prev, dtype='f')
-  activation = np.array(activation, dtype='f')
-  stretch_prev = np.array(stretch_prev, dtype='f')
-  stretch = np.array(stretch, dtype='f')
-  sigma_prev = np.array(sigma_prev, dtype='f')
-  delta_sigma_prev = np.array(delta_sigma_prev, dtype='f')
-  input_matrix = np.column_stack((activation_prev, activation, stretch_prev, stretch, sigma_prev, delta_sigma_prev))
-  predicted = lregr_model.predict(input_matrix)
-  sigma_predicted = predicted[:, 0]
-  dsigma_predicted = predicted[:, 1]
-  result = ""
-  count = len(sigma_predicted)
-  for i in range(count):
-    result += str(sigma_predicted[i]) + "#" + str(dsigma_predicted[i]) + ","
-  return result
-
 @app.route('/sigdsig', methods=['POST'])
 def prediction():
   global models
@@ -93,7 +56,7 @@ def prediction():
   model      = models[netname]['model']
   graph      = models[netname]['graph']
   session    = models[netname]['session']
-
+    
   activation_prev = params['activation_prev'].split(',')
   activation = params['activation'].split(',')
   stretch_prev = params['stretch_prev'].split(',')
@@ -110,11 +73,16 @@ def prediction():
   input_matrix = np.column_stack((activation_prev,activation, stretch_prev, stretch, sigma_prev, delta_sigma_prev))
   input_matrix_scaled = (input_matrix - scaler.data_min_[np.r_[feature_columns]]) / scaler.data_range_[np.r_[feature_columns]]
 
-  with graph.as_default(), session.as_default():
+  if(netname.endswith('.h5')):
+    with graph.as_default(), session.as_default():
       predicted = model.predict(input_matrix_scaled)
-  sigma_predicted = predicted[:, 0] * scaler.data_range_[target_columns[0]] + scaler.data_min_[target_columns[0]]
-  dsigma_predicted = predicted[:, 1] * scaler.data_range_[target_columns[1]] + scaler.data_min_[target_columns[1]]
-
+    sigma_predicted = predicted[:, 0] * scaler.data_range_[target_columns[0]] + scaler.data_min_[target_columns[0]]
+    dsigma_predicted = predicted[:, 1] * scaler.data_range_[target_columns[1]] + scaler.data_min_[target_columns[1]]
+  else:
+    predicted = model.predict(input_matrix)
+    sigma_predicted = predicted[:, 0]
+    dsigma_predicted = predicted[:, 1]
+  
   result = ""
   count = len(sigma_predicted)
   for i in range(count):
@@ -169,7 +137,7 @@ def prediction_time_series():
 
   with graph.as_default(), session.as_default():
     time_series_predicted = model.predict(time_series_input)
-    if(len(predicted.shape)==2):
+    if(len(time_series_predicted.shape)==2):
         predicted[:,:] = time_series_predicted[:,:]
     else:
         predicted[:, :] = time_series_predicted[:, time_series_steps-1, :]
@@ -182,6 +150,5 @@ def prediction_time_series():
   for i in range(count):
     result += str(sigma_predicted[i]) + "#" + str(dsigma_predicted[i]) + ","
   return result
-
 
 app.run(port = 8000, host = "147.91.204.14", debug = True)

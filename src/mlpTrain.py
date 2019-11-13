@@ -11,22 +11,24 @@ commands = open("loadData.py").read()
 exec(commands)
 
 model_path    = '../models/model-mlp.h5'
-training_data = data_scaled[data['testid'].isin(range(1,15,2))]
+training_data = data_scaled[data['testid'].isin(range(1,12,1))]
 X = training_data[:, feature_columns]
 Y = training_data[:, target_columns]
 
-val_data = data_scaled[data['testid'].isin(range(2,15,2))]
+val_data = data_scaled[data['testid'].isin(range(12,15,1))]
 X_val = val_data[:, feature_columns]
 Y_val = val_data[:, target_columns]
 
 
 model = Sequential()
-model.add(Dense(80, input_dim = len(feature_columns), activation='sigmoid'))
-model.add(Dropout(0.15))
+model.add(Dense(100, input_dim = len(feature_columns), activation='sigmoid'))
+model.add(Dropout(0.1))
+model.add(Dense(80, activation='sigmoid'))
+model.add(Dropout(0.1))
 model.add(Dense(60, activation='sigmoid'))
-model.add(Dropout(0.15))
-model.add(Dense(40, activation='sigmoid'))
-model.add(Dropout(0.15))
+model.add(Dropout(0.1))
+model.add(Dense(30, activation='sigmoid'))
+model.add(Dropout(0.1))
 model.add(Dense(2))
 model.compile(loss='mse', optimizer='adam')
 

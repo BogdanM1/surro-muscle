@@ -1,32 +1,29 @@
-from flask import Flask
-from flask import request
+from flask import Flask, request
 import tensorflow as tf
 from keras.models import load_model
-import numpy as np
 from sklearn.externals import joblib
+import numpy as np
 import os
 import sys
+import json
 
 app = Flask(__name__)
 
 commands = open("timeSeries.py").read()
 exec(commands)
-
-time_series_start = True
-nqp = 4
-time_series_input  = np.zeros((1, time_series_steps, len(time_series_feature_columns)))
-
-models_directory = "../models/"
+simulation_data = {}
 models = {}
+models_directory = "../models/"
 for file_name in os.listdir(models_directory):
   model_path  = os.path.join(models_directory,file_name)
-  session = tf.Session()
+  tf_session = tf.Session()
   graph = tf.get_default_graph()
-  with graph.as_default(), session.as_default():
+  with graph.as_default(), tf_session.as_default():
       model = load_model(model_path) if(file_name.endswith('.h5')) else joblib.load(model_path)
+
   models[file_name]  = {}
   models[file_name]['model'] = model
-  models[file_name]['session'] = session
+  models[file_name]['session'] = tf_session
   models[file_name]['graph'] = graph
 
 @app.route('/save_net', methods = ['POST'])
@@ -38,113 +35,96 @@ def loadNet():
   model_path = os.path.join(models_directory, netname)
   model_export.save(model_path)
   graph = tf.get_default_graph()
-  session = tf.Session()
-  with graph.as_default(), session.as_default():
+  tf_session = tf.Session()
+  with graph.as_default(), tf_session.as_default():
       model = load_model(model_path)
   models[netname] = {}
   models[netname]['model'] = model
-  models[netname]['session'] = session
+  models[netname]['session'] = tf_session
   models[netname]['graph'] = graph
+  return "OK"
+
+@app.route('/start', methods=['POST'])
+def start():
+  global simulation_data
+  params = request.form.to_dict()
+  simulation_id = params['simulation_id']
+  simulation_data[simulation_id] = {}
+  simulation_data[simulation_id]['nqp'] = params['nqp']
+  simulation_data[simulation_id]['netname'] = params['netname']
+  simulation_data[simulation_id]['time_series'] = params['time_series']
+  npq = int(simulation_data[simulation_id]['nqp'])
+  if (int(simulation_data[simulation_id]['time_series']) == 1):
+    simulation_data[simulation_id]['ts_input'] = np.zeros((npq, time_series_steps, len(time_series_feature_columns)))
+  simulation_data[simulation_id]['ts_start'] = True
+  return "OK"
+
+@app.route('/end', methods=['POST'])
+def end():
+  global simulation_data
+  params = request.form.to_dict()
+  simulation_id = params['simulation_id']
+  del simulation_data[simulation_id]
   return "OK"
 
 @app.route('/sigdsig', methods=['POST'])
 def prediction():
-  global models
+  global models, simulation_data
 
   params     = request.form.to_dict()
-  netname    = params['netname']
+  simulation_id  = params['simulation_id']
+  netname    = simulation_data[simulation_id]['netname']
+  time_series = int(simulation_data[simulation_id]['time_series'])
   model      = models[netname]['model']
   graph      = models[netname]['graph']
-  session    = models[netname]['session']
-    
-  activation_prev = params['activation_prev'].split(',')
-  activation = params['activation'].split(',')
-  stretch_prev = params['stretch_prev'].split(',')
-  stretch = params['stretch'].split(',')
-  sigma_prev = params['sigma_prev'].split(',')
-  delta_sigma_prev = params['delta_sigma_prev'].split(',')
+  tf_session = models[netname]['session']
 
-  activation_prev = np.array(activation_prev, dtype='f')
-  activation = np.array(activation, dtype='f')
-  stretch_prev = np.array(stretch_prev, dtype='f')
-  stretch = np.array(stretch, dtype='f')
-  sigma_prev = np.array(sigma_prev, dtype='f')
-  delta_sigma_prev = np.array(delta_sigma_prev, dtype='f')
-  input_matrix = np.column_stack((activation_prev,activation, stretch_prev, stretch, sigma_prev, delta_sigma_prev))
-  input_matrix_scaled = (input_matrix - scaler.data_min_[np.r_[feature_columns]]) / scaler.data_range_[np.r_[feature_columns]]
+  activation = np.array(params['activation'].split(','), dtype='f')
+  stretch =  np.array(params['stretch'].split(','), dtype='f')
+  sigma_prev = np.array(params['sigma_prev'].split(','), dtype='f')
+  delta_sigma_prev = np.array(params['delta_sigma_prev'].split(','), dtype='f')
 
-  if(netname.endswith('.h5')):
-    with graph.as_default(), session.as_default():
-      predicted = model.predict(input_matrix_scaled)
+  if(time_series == 0):
+    activation_prev = np.array(params['activation_prev'].split(','), dtype='f')
+    stretch_prev = np.array(params['stretch_prev'].split(','), dtype='f')
+    input = np.column_stack((activation_prev,activation, stretch_prev, stretch, sigma_prev, delta_sigma_prev))
+    if (netname.endswith('.h5')):
+      input = (input - scaler.data_min_[np.r_[feature_columns]]) / scaler.data_range_[np.r_[feature_columns]]
+  else:
+    converged = int(params['converged'])
+    nqp = int(simulation_data[simulation_id]['nqp'])
+    time_series_start = bool(simulation_data[simulation_id]['ts_start'])
+    input = simulation_data[simulation_id]['ts_input']
+    current_input = np.column_stack((activation, stretch, sigma_prev, delta_sigma_prev))
+    current_input = (current_input - scaler.data_min_[np.r_[time_series_feature_columns]]) / scaler.data_range_[np.r_[time_series_feature_columns]]
+    predicted = np.zeros((nqp, 2))
+    if time_series_start:
+        simulation_data[simulation_id]['ts_start'] = False
+        for i in range(0, nqp):
+          for j in range(0, time_series_steps):
+            input[i, j, :] = current_input[i, :]
+    else:
+        if(converged == 1):
+          for i in range(0, nqp):
+            for j in range(0, time_series_steps - 1):
+                input[i, j, :] = input[i, j + 1, :]
+        for i in range(0, nqp):
+          input[i, time_series_steps - 1,] = current_input[i, :]
+    simulation_data[simulation_id]['ts_input'] = input
+
+  with graph.as_default(), tf_session.as_default():
+    tmp_predicted = model.predict(input)
+    if (len(tmp_predicted.shape) == 2):
+      predicted = tmp_predicted
+    else:
+      predicted[:, :] = tmp_predicted[:, time_series_steps - 1, :]
+  if (netname.endswith('.h5')):
     sigma_predicted = predicted[:, 0] * scaler.data_range_[target_columns[0]] + scaler.data_min_[target_columns[0]]
     dsigma_predicted = predicted[:, 1] * scaler.data_range_[target_columns[1]] + scaler.data_min_[target_columns[1]]
   else:
-    predicted = model.predict(input_matrix)
     sigma_predicted = predicted[:, 0]
     dsigma_predicted = predicted[:, 1]
   
-  result = ""
-  count = len(sigma_predicted)
-  for i in range(count):
-    result += str(sigma_predicted[i]) + "#" + str(dsigma_predicted[i]) + ","
-  return result
-
-@app.route('/start-time_series', methods=['POST'])
-def start():
-  global time_series_start, nqp, time_series_input
-  time_series_start = True
-  params     = request.form.to_dict()
-  nqp        = int(params['nqp'])
-  time_series_input = np.zeros((nqp, time_series_steps, len(time_series_feature_columns)))
-  return "OK"
-
-@app.route('/sigdsig-time_series', methods=['POST'])
-def prediction_time_series():
-  global time_series_start, models, nqp
-
-  params     = request.form.to_dict()
-  netname    = params['netname']
-  model      = models[netname]['model']
-  graph      = models[netname]['graph']
-  session    = models[netname]['session']
-  
-  activation = params['activation'].split(',')
-  stretch    = params['stretch'].split(',')
-  sigma_prev = params['sigma_prev'].split(',')
-  delta_sigma_prev = params['delta_sigma_prev'].split(',')
-  converged = params['converged']
-  
-  activation = np.array(activation, dtype='f')
-  stretch = np.array(stretch, dtype='f')
-  sigma_prev = np.array(sigma_prev, dtype='f')
-  delta_sigma_prev = np.array(delta_sigma_prev, dtype='f')  
-  input_matrix = np.column_stack((activation, stretch, sigma_prev, delta_sigma_prev))
-  input_matrix_scaled = (input_matrix - scaler.data_min_[np.r_[time_series_feature_columns]]) / scaler.data_range_[np.r_[time_series_feature_columns]]
-
-  predicted = np.zeros((nqp, 2))
-  if time_series_start:
-      time_series_start = False
-      for i in range(0, nqp):
-        for j in range(0, time_series_steps):
-          time_series_input[i, j, :] = input_matrix_scaled[i, :]
-  else:
-      if(int(converged) == 1):
-        for i in range(0, nqp):
-          for j in range(0, time_series_steps - 1):
-              time_series_input[i, j, :] = time_series_input[i, j + 1, :]
-      for i in range(0, nqp):
-        time_series_input[i, time_series_steps - 1,] = input_matrix_scaled[i, :]
-
-  with graph.as_default(), session.as_default():
-    time_series_predicted = model.predict(time_series_input)
-    if(len(time_series_predicted.shape)==2):
-        predicted[:,:] = time_series_predicted[:,:]
-    else:
-        predicted[:, :] = time_series_predicted[:, time_series_steps-1, :]
-
-  sigma_predicted  = predicted[:, 0] * scaler.data_range_[target_columns[0]] + scaler.data_min_[target_columns[0]]
-  dsigma_predicted = predicted[:, 1] * scaler.data_range_[target_columns[1]] + scaler.data_min_[target_columns[1]]
-
   result = ""
   count = len(sigma_predicted)
   for i in range(count):

@@ -16,9 +16,9 @@ showTestData  = False
 writeDataResults = True
 writeDynamicResults = True
 
-model_path      = '../models/model-gru.h5'
+model_path      = '../models/model-mlp.h5'
 use_nnet = model_path.endswith('.h5')
-use_time_series  = True
+use_time_series  = False
 model = load_model(model_path) if(use_nnet) else joblib.load(model_path)
 
 results_dir = '../results/'
@@ -97,7 +97,7 @@ if(writeDataResults):
 		pred_data     = np.array(data_scaled_noiter)[indices, :] if(use_nnet) else np.array(data_noiter)[indices, :]
 		if(use_time_series):
 		    pred_data = pred_data[:, time_series_feature_columns]
-		    prediction_tmp = model.predict(InputToTimeSeries(pred_data, time_series_steps))
+		    prediction_tmp = model.predict(InputToTimeSeries(pred_data))
 		else:
 		    pred_data = pred_data[:, feature_columns]
 		    prediction_tmp = model.predict(pred_data)

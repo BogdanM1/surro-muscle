@@ -1,6 +1,7 @@
 from keras.callbacks import ModelCheckpoint
 from keras.layers import Dense, Dropout, Conv1D, MaxPooling1D, Flatten
 from keras.models import  Sequential
+from tcn.tcn import TCN
 from numpy.random import seed
 seed(1)
 from tensorflow import set_random_seed
@@ -13,7 +14,7 @@ model_path    = '../models/model-cnn.h5'
 
 X = []
 Y = []
-for i in range(1,12,1):
+for i in range(1,6,1):
     indices = data['testid'].isin([i])
     for x in InputToTimeSeries(data_scaled[indices][:,time_series_feature_columns], np.array(data.loc[indices,'converged'])):
         X.append(x)
@@ -24,27 +25,24 @@ Y = np.array(Y)
 
 X_val = []
 Y_val = []
-for i in range(12,15,1):
-    indices = data['testid'].isin([i])
-    for x in InputToTimeSeries(data_scaled[indices][:, time_series_feature_columns], np.array(data.loc[indices,'converged'])):
+for i in range(7,8,1):
+    indices = data_noiter['testid'].isin([i])
+    for x in InputToTimeSeries(data_scaled_noiter[indices][:, time_series_feature_columns]):
         X_val.append(x)
-    for y in  InputToTimeSeries(data_scaled[indices][:, target_columns], np.array(data.loc[indices,'converged'])):
+    for y in  InputToTimeSeries(data_scaled_noiter[indices][:, target_columns]):
         Y_val.append(y[-1])
 X_val = np.array(X_val)
 Y_val = np.array(Y_val)
 
 model = Sequential()
-model.add(Conv1D(filters=60, kernel_size=1, input_shape = (time_series_steps, len(time_series_feature_columns)), activation='sigmoid'))
+model.add(TCN(filters=60, kernel_size=1, input_shape = (time_series_steps, len(time_series_feature_columns)), activation='sigmoid'))
 #model.add(MaxPooling1D(pool_size=2))
 model.add(Dropout(0.1))
-model.add(Conv1D(filters=40, kernel_size=1, activation='sigmoid'))
-#model.add(MaxPooling1D(pool_size=2))
-model.add(Dropout(0.1))
-model.add(Conv1D(filters=20, kernel_size=1, activation='sigmoid'))
+model.add(TCN(filters=30, kernel_size=1, activation='sigmoid'))
 #model.add(MaxPooling1D(pool_size=2))
 model.add(Dropout(0.1))
 model.add(Flatten())
-model.add(Dense(10, activation='sigmoid'))
+model.add(Dense(20, activation='sigmoid'))
 model.add(Dropout(0.1))
 model.add(Dense(2))
 model.compile(loss='mse', optimizer='adam')

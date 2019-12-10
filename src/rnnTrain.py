@@ -13,7 +13,7 @@ model_path    = '../models/model-rnn.h5'
 
 X = []
 Y = []
-for i in range(1,12,1):
+for i in range(1,6,1):
     indices = data['testid'].isin([i])
     for x in InputToTimeSeries(data_scaled[indices][:,time_series_feature_columns], np.array(data.loc[indices,'converged'])):
         X.append(x)
@@ -24,11 +24,11 @@ Y = np.array(Y)
 
 X_val = []
 Y_val = []
-for i in range(12,15,1):
-    indices = data['testid'].isin([i])
-    for x in InputToTimeSeries(data_scaled[indices][:, time_series_feature_columns], np.array(data.loc[indices,'converged'])):
+for i in range(7,8,1):
+    indices = data_noiter['testid'].isin([i])
+    for x in InputToTimeSeries(data_scaled_noiter[indices][:, time_series_feature_columns]):
         X_val.append(x)
-    for y in  InputToTimeSeries(data_scaled[indices][:, target_columns], np.array(data.loc[indices,'converged'])):
+    for y in  InputToTimeSeries(data_scaled_noiter[indices][:, target_columns]):
         Y_val.append(y)
 X_val = np.array(X_val)
 Y_val = np.array(Y_val)
@@ -37,8 +37,6 @@ model = Sequential()
 model.add(SimpleRNN(60, input_shape = (time_series_steps, len(time_series_feature_columns)), activation='sigmoid', return_sequences=True))
 model.add(Dropout(0.1))
 model.add(SimpleRNN(40, activation='sigmoid', return_sequences=True))
-model.add(Dropout(0.1))
-model.add(SimpleRNN(20, activation='sigmoid', return_sequences=True))
 model.add(Dropout(0.1))
 model.add(Dense(2))
 model.compile(loss='mse', optimizer='adam')

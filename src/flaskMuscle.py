@@ -78,17 +78,18 @@ def prediction():
   model      = models[netname]['model']
   graph      = models[netname]['graph']
   tf_session = models[netname]['session']
+  b_neural_net = netname.endswith('.h5')
 
   activation = np.array(params['activation'].split(','), dtype='f')
   stretch =  np.array(params['stretch'].split(','), dtype='f')
   sigma_prev = np.array(params['sigma_prev'].split(','), dtype='f')
-  delta_sigma_prev = np.array(params['delta_sigma_prev'].split(','), dtype='f')
+  delta_sigma_prev = np.array(params['delta_sigma_prev'].split(','), dtype='f') 
 
   if(time_series == 0):
     activation_prev = np.array(params['activation_prev'].split(','), dtype='f')
     stretch_prev = np.array(params['stretch_prev'].split(','), dtype='f')
     input = np.column_stack((activation_prev,activation, stretch_prev, stretch, sigma_prev, delta_sigma_prev))
-    if (netname.endswith('.h5')):
+    if (b_neural_net):
       input = (input - scaler.data_min_[np.r_[feature_columns]]) / scaler.data_range_[np.r_[feature_columns]]
   else:
     converged = int(params['converged'])
@@ -118,7 +119,7 @@ def prediction():
       predicted = tmp_predicted
     else:
       predicted[:, :] = tmp_predicted[:, time_series_steps - 1, :]
-  if (netname.endswith('.h5')):
+  if (b_neural_net):
     sigma_predicted = predicted[:, 0] * scaler.data_range_[target_columns[0]] + scaler.data_min_[target_columns[0]]
     dsigma_predicted = predicted[:, 1] * scaler.data_range_[target_columns[1]] + scaler.data_min_[target_columns[1]]
   else:
@@ -131,4 +132,4 @@ def prediction():
     result += str(sigma_predicted[i]) + "#" + str(dsigma_predicted[i]) + ","
   return result
 
-app.run(port = 8000, host = "147.91.204.14", debug = True)
+app.run(port = 8000, host = "medflow.bioirc.ac.rs", debug = True)

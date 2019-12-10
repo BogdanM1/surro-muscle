@@ -11,23 +11,21 @@ commands = open("loadData.py").read()
 exec(commands)
 
 model_path    = '../models/model-mlp.h5'
-training_data = data_scaled[data['testid'].isin(range(1,12,1))]
+training_data = data_scaled[data['testid'].isin(range(1,6,1))]
 X = training_data[:, feature_columns]
 Y = training_data[:, target_columns]
 
-val_data = data_scaled[data['testid'].isin(range(12,15,1))]
+val_data = data_scaled_noiter[data_noiter['testid'].isin(range(7,8,1))]
 X_val = val_data[:, feature_columns]
 Y_val = val_data[:, target_columns]
 
 
 model = Sequential()
-model.add(Dense(100, input_dim = len(feature_columns), activation='sigmoid'))
+model.add(Dense(50, input_dim = len(feature_columns), activation='sigmoid'))
 model.add(Dropout(0.1))
-model.add(Dense(80, activation='sigmoid'))
+model.add(Dense(48, activation='sigmoid'))
 model.add(Dropout(0.1))
-model.add(Dense(60, activation='sigmoid'))
-model.add(Dropout(0.1))
-model.add(Dense(30, activation='sigmoid'))
+model.add(Dense(2, activation='sigmoid'))
 model.add(Dropout(0.1))
 model.add(Dense(2))
 model.compile(loss='mse', optimizer='adam')
@@ -35,7 +33,7 @@ model.compile(loss='mse', optimizer='adam')
 with open('../results/summary_mlp.txt','w') as fh:
     model.summary(print_fn=lambda x: fh.write(x + '\n'))
 
-history = model.fit(X, Y, epochs = 1000, batch_size = 64, validation_data=(X_val, Y_val),
+history = model.fit(X, Y, epochs = 500, batch_size = 64, validation_data=(X_val, Y_val),
                     callbacks=[ModelCheckpoint(model_path, save_best_only=True)])
 
 pd.DataFrame(history.history).to_csv("../results/train.csv")

@@ -16,9 +16,9 @@ showTestData  = False
 writeDataResults = True
 writeDynamicResults = True
 
-model_path      = '../models/model-mlp.h5'
+model_path      = '../models/model-gru.h5'
 use_nnet = model_path.endswith('.h5')
-use_time_series  = False
+use_time_series  = any(t in model_path for t in ['gru','lstm','rnn','cnn'])
 model = load_model(model_path) if(use_nnet) else joblib.load(model_path)
 
 results_dir = '../results/'
@@ -110,12 +110,12 @@ if(writeDataResults):
 		if(use_nnet):
 		    for itarg in range(0, len(target_columns)):
 		        prediction[:, itarg] = prediction[:, itarg] * scaler.data_range_[target_columns[itarg]]  + scaler.data_min_[target_columns[itarg]]
-		nlen = len(prediction)
+		nlen = len(prediction)-time_series_steps
 		df = pd.DataFrame(data = { 'time': original_data[0:nlen,0],
                                'sigma': original_data[0:nlen,target_columns[0]],
                                'delta_sigma': original_data[0:nlen,target_columns[1]],
-                               'sigma pred': prediction[:, 0],
-                               'delta_sigma pred': prediction[:,1]})
+                               'sigma pred': prediction[0:nlen, 0],
+                               'delta_sigma pred': prediction[0:nlen,1]})
 		df.to_csv(results_dir + 'data_pred_test' + str(i+1) + '.csv', index=False)
 
 
@@ -126,12 +126,12 @@ if(writeDynamicResults):
 	        original_data = np.array(data_noiter)[indices, :]
 	        prediction = pd.read_csv(results_dir + "surroHuxley"+str(i+1)+".csv", sep='\s*,\s*', engine='python')
 	        prediction = np.array(prediction.loc[::4, ['sigma','delta_sigma']])
-        	nlen = len(prediction)
+        	nlen = len(prediction)-time_series_steps
         	df = pd.DataFrame(data = { 'time': original_data[0:nlen,0],
                                      'sigma': original_data[0:nlen,target_columns[0]],
                                      'delta_sigma': original_data[0:nlen,target_columns[1]],
-                                     'sigma pred': prediction[:, 0],
-                                     'delta_sigma pred': prediction[:,1]})
+                                     'sigma pred': prediction[0:nlen, 0],
+                                     'delta_sigma pred': prediction[0:nlen,1]})
 	        df.to_csv(results_dir + 'dynamic_pred_test' + str(i+1) + '.csv', index=False)
 	    except:
 	        print("Error during processing test No. " + str(i+1))

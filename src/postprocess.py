@@ -5,6 +5,8 @@ import pandas as pd
 import numpy as np
 from keras.models import load_model
 from sklearn.externals import joblib
+from sklearn.metrics import mean_squared_error
+import math
 import os
 
 commands = open("timeSeries.py").read()
@@ -18,8 +20,8 @@ writeDynamicResults = True
 
 model_path      = '../models/model-gru.h5'
 use_nnet = model_path.endswith('.h5')
-use_time_series  = any(t in model_path for t in ['gru','lstm','rnn','cnn'])
-model = load_model(model_path) if(use_nnet) else joblib.load(model_path)
+use_time_series  = any(t in model_path for t in ['gru','lstm','rnn','cnn','tcn'])
+model = load_model(model_path, custom_objects={'huber':huber_loss()}) if(use_nnet) else joblib.load(model_path)
 
 results_dir = '../results/'
 for file_name in os.listdir(results_dir):
@@ -91,6 +93,7 @@ def drawTestResults():
             drawGraphRes(time, delta_sigma, delta_sigma_pred, 'original', 'predicted', 'Stress derivative (dynamic)', testid)
             
 if(writeDataResults):
+	print('data')
 	for i in range(0,num_tests):
 		indices       = data_noiter.index[data_noiter['testid'] == (i+1)].tolist()
 		original_data = np.array(data_noiter)[indices, :]
@@ -111,6 +114,9 @@ if(writeDataResults):
 		    for itarg in range(0, len(target_columns)):
 		        prediction[:, itarg] = prediction[:, itarg] * scaler.data_range_[target_columns[itarg]]  + scaler.data_min_[target_columns[itarg]]
 		nlen = len(prediction)-time_series_steps
+		err_sig = math.sqrt(mean_squared_error(original_data[0:nlen,target_columns[0]],  prediction[0:nlen, 0]))
+		err_dsig = math.sqrt(mean_squared_error(original_data[0:nlen,target_columns[1]],  prediction[0:nlen, 1]))
+		print(str(err_sig)+','+str(err_dsig))
 		df = pd.DataFrame(data = { 'time': original_data[0:nlen,0],
                                'sigma': original_data[0:nlen,target_columns[0]],
                                'delta_sigma': original_data[0:nlen,target_columns[1]],
@@ -120,6 +126,7 @@ if(writeDataResults):
 
 
 if(writeDynamicResults):
+	print('dynamic')
 	for i in range(0,num_tests):
 	    try:
 	        indices       = data_noiter.index[data_noiter['testid'] == (i+1)].tolist()
@@ -127,6 +134,9 @@ if(writeDynamicResults):
 	        prediction = pd.read_csv(results_dir + "surroHuxley"+str(i+1)+".csv", sep='\s*,\s*', engine='python')
 	        prediction = np.array(prediction.loc[::4, ['sigma','delta_sigma']])
         	nlen = len(prediction)-time_series_steps
+        	err_sig = math.sqrt(mean_squared_error(original_data[0:nlen,target_columns[0]],  prediction[0:nlen, 0]))
+        	err_dsig = math.sqrt(mean_squared_error(original_data[0:nlen,target_columns[1]],  prediction[0:nlen, 1]))
+        	print(str(err_sig)+','+str(err_dsig))
         	df = pd.DataFrame(data = { 'time': original_data[0:nlen,0],
                                      'sigma': original_data[0:nlen,target_columns[0]],
                                      'delta_sigma': original_data[0:nlen,target_columns[1]],

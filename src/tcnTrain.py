@@ -1,16 +1,17 @@
 from keras.callbacks import ModelCheckpoint
 from keras.layers import Dense, Input, Dropout, Conv1D, MaxPooling1D, Flatten,LocallyConnected1D
 from keras.models import  Model, Sequential
-from numpy.random import seed
 from tcn import TCN
+from numpy.random import seed
+from tensorflow import set_random_seed 
+
 seed(1)
-from tensorflow import set_random_seed
 set_random_seed(2)
 
 commands = open("timeSeries.py").read()
 exec(commands)
 
-model_path    = '../models/model-cnn.h5'
+model_path    = '../models/model-tcn.h5'
 
 X = []
 Y = []
@@ -35,22 +36,18 @@ X_val = np.array(X_val)
 Y_val = np.array(Y_val)
 
 i = Input(shape=(time_series_steps, len(time_series_feature_columns)))
-o = TCN(nb_filters=32, kernel_size=1, activation='sigmoid', name='tcn_1')(i)
+o = TCN(nb_filters=512, kernel_size=1, activation='sigmoid', name='tcn_1')(i)
 o = Dropout(0.1) (o)
-#o = TCN(nb_filters=64, kernel_size=1, activation='sigmoid', name='tcn_2')(o)
+#o = TCN(nb_filters=256, kernel_size=1, activation='sigmoid', name='tcn_2')(o)
 #o = Dropout(0.1)(o)
 o = Flatten()(o)
-o = Dense(10, activation='sigmoid') (o)
+o = Dense(64, activation='sigmoid') (o)
 o = Dropout(0.1) (o)
 o = Dense(2) (o)
-
 model = Model(inputs = [i], outputs=[o])
-model.compile(loss='mse', optimizer='adam')
-with open('../results/summary_cnn.txt','w') as fh:
-    model.summary(print_fn=lambda x: fh.write(x + '\n'))
+model.compile(loss=huber_loss(), optimizer='adam')
 
-history = model.fit(X, Y, epochs = 500, batch_size = 32, validation_data=(X_val, Y_val),
+history = model.fit(X, Y, epochs = 500, batch_size = 256, validation_data=(X_val, Y_val),
                     callbacks=[ModelCheckpoint(model_path, monitor='val_loss', save_best_only=True)])
-
 pd.DataFrame(history.history).to_csv("../results/train-cnn.csv")
 

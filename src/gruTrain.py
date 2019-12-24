@@ -3,6 +3,7 @@ from keras.layers import Dense, Dropout, GRU, CuDNNGRU, Bidirectional
 from keras.models import  Sequential
 from numpy.random import seed
 from tensorflow import set_random_seed 
+from attention import Attention 
 
 seed(1)
 set_random_seed(2)
@@ -19,7 +20,7 @@ for i in range(1,14,1):
     for x in InputToTimeSeries(data_scaled[indices][:,time_series_feature_columns], np.array(data.loc[indices,'converged'])):
         X.append(x)
     for y in InputToTimeSeries(data_scaled[indices][:,target_columns], np.array(data.loc[indices,'converged'])):
-        Y.append(y)
+        Y.append(y[-1])
 X = np.array(X)
 Y = np.array(Y)
 
@@ -30,16 +31,17 @@ for i in range(14,15,1):
     for x in InputToTimeSeries(data_scaled[indices][:, time_series_feature_columns],np.array(data.loc[indices,'converged'])):
         X_val.append(x)
     for y in  InputToTimeSeries(data_scaled[indices][:, target_columns], np.array(data.loc[indices,'converged'])):
-        Y_val.append(y)
+        Y_val.append(y[-1])
 X_val = np.array(X_val)
 Y_val = np.array(Y_val)
 
 model = Sequential()
-model.add(GRU(512, input_shape = (time_series_steps, len(time_series_feature_columns)), activation='sigmoid', return_sequences=True))
+model.add(Bidirectional(GRU(512, input_shape = (time_series_steps, len(time_series_feature_columns)), activation='sigmoid', return_sequences=True)))
 model.add(Dropout(.1))
-model.add(GRU(256, activation='sigmoid', return_sequences=True))
+model.add(Bidirectional(GRU(256, activation='sigmoid', return_sequences=True)))
 model.add(Dropout(.1))
-model.add(GRU(64, activation ='sigmoid', return_sequences=True))
+model.add(Bidirectional(GRU(64, activation ='sigmoid', return_sequences=True)))
+model.add(Attention())
 model.add(Dropout(.1))
 model.add(Dense(2))
 model.compile(loss=huber_loss(), optimizer='adam')

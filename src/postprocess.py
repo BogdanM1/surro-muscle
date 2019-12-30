@@ -8,6 +8,11 @@ from sklearn.externals import joblib
 from sklearn.metrics import mean_squared_error
 import math
 import os
+from keras_multi_head import MultiHeadAttention
+from keras_self_attention import SeqSelfAttention
+from keras_radam import RAdam
+from keras_adabound import AdaBound
+from keras_lookahead import Lookahead
 
 commands = open("timeSeries.py").read()
 exec(commands)
@@ -18,15 +23,42 @@ showTestData  = False
 writeDataResults = True
 writeDynamicResults = True
 
-model_path      = '../models/model-gru.h5'
+model_path      = '../models/model-gru-selfAttention.h5'
 use_nnet = model_path.endswith('.h5')
 use_time_series  = any(t in model_path for t in ['gru','lstm','rnn','cnn','tcn'])
-model = load_model(model_path, custom_objects={'huber':huber_loss()}) if(use_nnet) else joblib.load(model_path)
+model = load_model(model_path, custom_objects={'huber':huber_loss(),'MultiHeadAttention':MultiHeadAttention,
+      'SeqSelfAttention':SeqSelfAttention,'Lookahead':Lookahead,
+      'RAdam':RAdam,'AdaBound':AdaBound}) if(use_nnet) else joblib.load(model_path)
 
 results_dir = '../results/'
 for file_name in os.listdir(results_dir):
     if file_name.endswith('.png') or (file_name.startswith('data') and file_name.endswith('.csv')):
         os.unlink(results_dir + file_name)
+
+def print_metrics(sig_orig, dsig_orig, sig_pred, dsig_pred):
+		mean_sig_orig = np.mean(sig_orig)
+		mean_dsig_orig = np.mean(dsig_orig)
+		mean_sig_pred = np.mean(sig_pred)
+		mean_dsig_pred = np.mean(dsig_pred)
+		mean_sig_orig_diff = np.array([x - mean_sig_orig for x in sig_orig])
+		mean_dsig_orig_diff = np.array([x - mean_dsig_orig for x in dsig_orig])
+		mean_sig_pred_diff = np.array([x - mean_sig_pred for x in sig_pred])
+		mean_dsig_pred_diff = np.array([x - mean_dsig_pred for x in dsig_pred])
+       
+		rmse_sig = math.sqrt(mean_squared_error(sig_orig, sig_pred ))
+		rmse_dsig = math.sqrt(mean_squared_error(dsig_orig,  dsig_pred))
+		max_sig = max(abs(sig_orig - sig_pred))
+		max_dsig = max(abs(dsig_orig - dsig_pred))   
+		min_sig = min(abs(sig_orig - sig_pred))
+		min_dsig = min(abs(dsig_orig - dsig_pred))
+		rse_sig = rmse_sig/math.sqrt(sum(mean_sig_orig_diff*mean_sig_orig_diff))
+		rse_dsig = rmse_dsig/math.sqrt(sum(mean_dsig_orig_diff*mean_dsig_orig_diff))
+		corr_sig = (sum(mean_sig_orig_diff*mean_sig_pred_diff))
+		corr_sig = corr_sig/math.sqrt(sum(mean_sig_orig_diff*mean_sig_orig_diff)*sum(mean_sig_pred_diff*mean_sig_pred_diff))
+		corr_dsig = (sum(mean_dsig_orig_diff*mean_dsig_pred_diff))
+		corr_dsig = corr_dsig/math.sqrt(sum(mean_dsig_orig_diff*mean_dsig_orig_diff)*sum(mean_dsig_pred_diff*mean_dsig_pred_diff))    
+		print(str(rmse_sig)+','+str(rmse_dsig)+','+str(max_sig)+','+str(max_dsig)+','+str(min_sig)+','+str(min_dsig)
+    +','+str(rse_sig)+','+str(rse_dsig)+','+str(corr_sig)+','+str(corr_dsig))
 
 def drawGraph(x, y, name, unit, testid):
     global  results_dir
@@ -94,6 +126,7 @@ def drawTestResults():
             
 if(writeDataResults):
 	print('data')
+	print('rmse(stress), rmse(stress derivative), max_err(stress), max_err(stress derviative), min_err(stress), min_err(stress derivative), rse(stress), rse(stress derviative), corr(stress), corr(stress derivative)') 
 	for i in range(0,num_tests):
 		indices       = data_noiter.index[data_noiter['testid'] == (i+1)].tolist()
 		original_data = np.array(data_noiter)[indices, :]
@@ -114,9 +147,7 @@ if(writeDataResults):
 		    for itarg in range(0, len(target_columns)):
 		        prediction[:, itarg] = prediction[:, itarg] * scaler.data_range_[target_columns[itarg]]  + scaler.data_min_[target_columns[itarg]]
 		nlen = len(prediction)-time_series_steps
-		err_sig = math.sqrt(mean_squared_error(original_data[0:nlen,target_columns[0]],  prediction[0:nlen, 0]))
-		err_dsig = math.sqrt(mean_squared_error(original_data[0:nlen,target_columns[1]],  prediction[0:nlen, 1]))
-		print(str(err_sig)+','+str(err_dsig))
+		print_metrics(original_data[0:nlen,target_columns[0]], original_data[0:nlen,target_columns[1]], prediction[0:nlen, 0], prediction[0:nlen, 1])
 		df = pd.DataFrame(data = { 'time': original_data[0:nlen,0],
                                'sigma': original_data[0:nlen,target_columns[0]],
                                'delta_sigma': original_data[0:nlen,target_columns[1]],
@@ -127,6 +158,7 @@ if(writeDataResults):
 
 if(writeDynamicResults):
 	print('dynamic')
+	print('rmse(stress), rmse(stress derivative), max_err(stress), max_err(stress derviative), min_err(stress), min_err(stress derivative), rse(stress), rse(stress derviative), corr(stress), corr(stress derivative)') 
 	for i in range(0,num_tests):
 	    try:
 	        indices       = data_noiter.index[data_noiter['testid'] == (i+1)].tolist()
@@ -134,9 +166,7 @@ if(writeDynamicResults):
 	        prediction = pd.read_csv(results_dir + "surroHuxley"+str(i+1)+".csv", sep='\s*,\s*', engine='python')
 	        prediction = np.array(prediction.loc[::4, ['sigma','delta_sigma']])
         	nlen = len(prediction)-time_series_steps
-        	err_sig = math.sqrt(mean_squared_error(original_data[0:nlen,target_columns[0]],  prediction[0:nlen, 0]))
-        	err_dsig = math.sqrt(mean_squared_error(original_data[0:nlen,target_columns[1]],  prediction[0:nlen, 1]))
-        	print(str(err_sig)+','+str(err_dsig))
+        	print_metrics(original_data[0:nlen,target_columns[0]], original_data[0:nlen,target_columns[1]], prediction[0:nlen, 0], prediction[0:nlen, 1])
         	df = pd.DataFrame(data = { 'time': original_data[0:nlen,0],
                                      'sigma': original_data[0:nlen,target_columns[0]],
                                      'delta_sigma': original_data[0:nlen,target_columns[1]],

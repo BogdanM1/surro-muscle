@@ -9,7 +9,6 @@ import json
 from keras_multi_head import MultiHead, MultiHeadAttention
 from keras_self_attention import SeqSelfAttention
 from keras_radam import RAdam
-from keras_adabound import AdaBound
 from keras_lookahead import Lookahead
 
 app = Flask(__name__)
@@ -26,7 +25,7 @@ for file_name in os.listdir(models_directory):
   with graph.as_default(), tf_session.as_default():
       model = load_model(model_path, custom_objects={'huber':huber_loss(),'MultiHeadAttention':MultiHeadAttention,
       'SeqSelfAttention':SeqSelfAttention,'Lookahead':Lookahead,
-      'RAdam':RAdam, 'AdaBound':AdaBound}) if(file_name.endswith('.h5')) else joblib.load(model_path)
+      'RAdam':RAdam}) if(file_name.endswith('.h5')) else joblib.load(model_path)
 
   models[file_name]  = {}
   models[file_name]['model'] = model

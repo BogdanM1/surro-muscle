@@ -4,9 +4,7 @@ from keras.models import  Sequential
 from numpy.random import seed
 from tensorflow import set_random_seed 
 from keras_radam import RAdam
-from keras_adabound import AdaBound
 from keras_lookahead import Lookahead
-from keras_multi_head import MultiHead
 from keras_self_attention import SeqSelfAttention
 
 seed(1)
@@ -37,16 +35,16 @@ for i in range(14,15,1):
     for x in InputToTimeSeries(data_scaled[indices][:, time_series_feature_columns],np.array(data.loc[indices,'converged'])):
         X_val.append(x)
     for y in  InputToTimeSeries(data_scaled[indices][:, target_columns], np.array(data.loc[indices,'converged'])):
-        Y_val.append(y)
+        Y_val.append(y[-1])
 X_val = np.array(X_val)
 Y_val = np.array(Y_val)
 
 model = Sequential()
-model.add(Bidirectional(GRU(512, input_shape = (time_series_steps, len(time_series_feature_columns)), activation='sigmoid', return_sequences=True)))
+model.add(Bidirectional(GRU(512, input_shape = (time_series_steps, len(time_series_feature_columns)), activation='sigmoid', return_sequences=False)))
 model.add(Dropout(.1))
-model.add(Bidirectional(GRU(256, activation='sigmoid', return_sequences=True)))
+model.add(Bidirectional(GRU(256, activation='sigmoid', return_sequences=False)))
 model.add(Dropout(.1))
-model.add(Bidirectional(GRU(64, activation ='sigmoid', return_sequences=True)))
+model.add(Bidirectional(GRU(64, activation ='sigmoid', return_sequences=False)))
 model.add(SeqSelfAttention())
 model.add(Dropout(.1))
 model.add(Dense(2))

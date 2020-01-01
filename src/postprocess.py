@@ -11,7 +11,6 @@ import os
 from keras_multi_head import MultiHeadAttention
 from keras_self_attention import SeqSelfAttention
 from keras_radam import RAdam
-from keras_adabound import AdaBound
 from keras_lookahead import Lookahead
 
 commands = open("timeSeries.py").read()
@@ -28,7 +27,7 @@ use_nnet = model_path.endswith('.h5')
 use_time_series  = any(t in model_path for t in ['gru','lstm','rnn','cnn','tcn'])
 model = load_model(model_path, custom_objects={'huber':huber_loss(),'MultiHeadAttention':MultiHeadAttention,
       'SeqSelfAttention':SeqSelfAttention,'Lookahead':Lookahead,
-      'RAdam':RAdam,'AdaBound':AdaBound}) if(use_nnet) else joblib.load(model_path)
+      'RAdam':RAdam}) if(use_nnet) else joblib.load(model_path)
 
 results_dir = '../results/'
 for file_name in os.listdir(results_dir):

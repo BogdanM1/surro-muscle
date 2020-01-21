@@ -1,9 +1,10 @@
 from keras.callbacks import ModelCheckpoint
-from keras.layers import Dense, Input, Dropout, GRU, MaxPooling1D, Flatten
+from keras.layers import Dense, Input, Dropout, Flatten
 from keras.models import  Model, Sequential
 from tcn import TCN
 from numpy.random import seed
 from tensorflow import set_random_seed 
+from keras_radam import RAdam
 
 seed(1)
 set_random_seed(2)
@@ -15,7 +16,7 @@ model_path    = '../models/model-tcn.h5'
 
 X = []
 Y = []
-for i in range(1,14,1):
+for i in range(5,13,1):
     indices = data['testid'].isin([i])
     for x in InputToTimeSeries(data_scaled[indices][:,time_series_feature_columns], np.array(data.loc[indices,'converged'])):
         X.append(x)
@@ -26,7 +27,7 @@ Y = np.array(Y)
 
 X_val = []
 Y_val = []
-for i in range(14,15,1):
+for i in range(1,5,1):
     indices = data_noiter['testid'].isin([i])
     for x in InputToTimeSeries(data_scaled_noiter[indices][:, time_series_feature_columns]):
         X_val.append(x)
@@ -36,16 +37,15 @@ X_val = np.array(X_val)
 Y_val = np.array(Y_val)
 
 i = Input(shape=(time_series_steps, len(time_series_feature_columns)))
-o = TCN(nb_filters=8, kernel_size=1, activation='wavenet', name='tcn_1')(i)
-#o = Dropout(0.1)(o)
-o = TCN(nb_filters=16, activation='wavenet', name='tcn_2')(o)
-#o = Dropout(0.1)(o)
+o = TCN(nb_filters=64, nb_stacks=3, kernel_size=2, activation='wavenet', name='tcn_1')(i)
+o = Dropout(.1)(o)
+#o = TCN(nb_filters=16, nb_stacks=3, kernel_size=2, activation='wavenet', name='tcn_2')(o)
 o = Flatten()(o)
-o = Dense(128, activation='sigmoid')(o)
+o = Dense(64, activation='sigmoid')(o)
 o = Dropout(0.1)(o)
 o = Dense(2) (o)
 model = Model(inputs = [i], outputs=[o])
-model.compile(loss=huber_loss(), optimizer='adam')
+model.compile(loss=huber_loss(), optimizer=RAdam())
 
 history = model.fit(X, Y, epochs = 1000, batch_size = 512, validation_data=(X_val, Y_val),
                     callbacks=[ModelCheckpoint(model_path, monitor='val_loss', save_best_only=True)])

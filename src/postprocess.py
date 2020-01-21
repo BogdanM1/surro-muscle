@@ -8,10 +8,8 @@ from sklearn.externals import joblib
 from sklearn.metrics import mean_squared_error
 import math
 import os
-from keras_multi_head import MultiHeadAttention
 from keras_self_attention import SeqSelfAttention
 from keras_radam import RAdam
-from keras_lookahead import Lookahead
 
 commands = open("timeSeries.py").read()
 exec(commands)
@@ -20,13 +18,13 @@ num_tests = 15
 
 showTestData  = False
 writeDataResults = True
-writeDynamicResults = True
+writeSimulationResults = True
 
-model_path      = '../models/model-gru-selfAttention.h5'
+model_path      = '../models/model-tcn_.h5'
 use_nnet = model_path.endswith('.h5')
 use_time_series  = any(t in model_path for t in ['gru','lstm','rnn','cnn','tcn'])
-model = load_model(model_path, custom_objects={'huber':huber_loss(),'MultiHeadAttention':MultiHeadAttention,
-      'SeqSelfAttention':SeqSelfAttention,'Lookahead':Lookahead,
+model = load_model(model_path, custom_objects={'huber':huber_loss(),
+      'SeqSelfAttention':SeqSelfAttention,
       'RAdam':RAdam}) if(use_nnet) else joblib.load(model_path)
 
 results_dir = '../results/'
@@ -61,10 +59,12 @@ def print_metrics(sig_orig, dsig_orig, sig_pred, dsig_pred):
 
 def drawGraph(x, y, name, unit, testid):
     global  results_dir
-    plt.figure(figsize=(5, 4), dpi=80)
-    plt.plot(x, y)
+    plt.figure(figsize=(5, 4), dpi=300)
+    plt.plot(x, y, linewidth=3.0, color='rebeccapurple')
     plt.xlabel('Time [s]')
+    plt.xlim(left=0)	
     plt.ylabel(name + ' ' + unit)
+    plt.ylim(bottom=0)	
     plt.title('Test ' + str(testid) + ' - ' + name)
     plt.tight_layout()
     plt.savefig(results_dir + name + str(testid) + '.png')
@@ -72,13 +72,15 @@ def drawGraph(x, y, name, unit, testid):
 
 def drawGraphRes(x, y1, y2, name1, name2, title, testid):
     global results_dir
-    plt.figure(figsize=(5, 4), dpi=80)
-    plt.plot(x, y1)
-    plt.plot(x, y2)
+    plt.figure(figsize=(5, 4), dpi=300)
+    plt.plot(x, y1, linewidth=3.0, color='rebeccapurple')
+    plt.plot(x, y2, linewidth=3.0, color='lightcoral', linestyle='--')
     plt.xlabel('Time [s]')
+    plt.xlim(left=0)
     plt.ylabel(title + ' [pN/nm^2]')
+    plt.ylim(bottom=0, top=1.2*plt.ylim()[1])
     plt.title('Test ' + str(testid) + ' - ' + title, loc = 'left')
-    plt.legend([name1, name2], loc='lower right',  mode="expand", bbox_to_anchor=(0.35, 1.2), borderaxespad=0)
+    plt.legend([name1, name2], loc='upper left', frameon=False)
     plt.tight_layout()
     plt.savefig(results_dir + title + str(testid) + '.png')
     plt.close()
@@ -107,7 +109,7 @@ def list_to_num(numList):
 def drawTestResults():
     global results_dir
     for file_name in os.listdir(results_dir):
-        if not file_name.startswith('data') and not file_name.startswith('dynamic'):
+        if not file_name.startswith('data') and not file_name.startswith('simulation'):
             continue
         data = pd.read_csv(results_dir + file_name)
         time = np.array(data['time'])
@@ -117,11 +119,11 @@ def drawTestResults():
         delta_sigma_pred = np.array(data['delta_sigma pred'])
         testid = list_to_num([int(s) for s in file_name if s.isdigit()])
         if file_name.startswith('data'):
-            drawGraphRes(time, sigma, sigma_pred, 'original', 'predicted', 'Stress', testid)
-            drawGraphRes(time, delta_sigma, delta_sigma_pred, 'original', 'predicted','Stress derivative', testid)
+            drawGraphRes(time, sigma, sigma_pred, 'Original model', 'Surrogate model', 'Stress', testid)
+            drawGraphRes(time, delta_sigma, delta_sigma_pred, 'Original model', 'Surrogate model','Stress derivative', testid)
         else:
-            drawGraphRes(time, sigma, sigma_pred, 'original', 'predicted', 'Stress (dynamic)', testid)
-            drawGraphRes(time, delta_sigma, delta_sigma_pred, 'original', 'predicted', 'Stress derivative (dynamic)', testid)
+            drawGraphRes(time, sigma, sigma_pred, 'Original model', 'Surrogate model', 'Stress (simulation)', testid)
+            drawGraphRes(time, delta_sigma, delta_sigma_pred, 'Original model', 'Surrogate model', 'Stress derivative (simulation)', testid)
             
 if(writeDataResults):
 	print('data')
@@ -145,18 +147,17 @@ if(writeDataResults):
 		if(use_nnet):
 		    for itarg in range(0, len(target_columns)):
 		        prediction[:, itarg] = prediction[:, itarg] * scaler.data_range_[target_columns[itarg]]  + scaler.data_min_[target_columns[itarg]]
-		nlen = len(prediction)-time_series_steps
-		print_metrics(original_data[0:nlen,target_columns[0]], original_data[0:nlen,target_columns[1]], prediction[0:nlen, 0], prediction[0:nlen, 1])
-		df = pd.DataFrame(data = { 'time': original_data[0:nlen,0],
-                               'sigma': original_data[0:nlen,target_columns[0]],
-                               'delta_sigma': original_data[0:nlen,target_columns[1]],
-                               'sigma pred': prediction[0:nlen, 0],
-                               'delta_sigma pred': prediction[0:nlen,1]})
+		print_metrics(original_data[:,target_columns[0]], original_data[:,target_columns[1]], prediction[:, 0], prediction[:, 1])
+		df = pd.DataFrame(data = { 'time': original_data[:,0],
+                               'sigma': original_data[:,target_columns[0]],
+                               'delta_sigma': original_data[:,target_columns[1]],
+                               'sigma pred': prediction[:, 0],
+                               'delta_sigma pred': prediction[:,1]})
 		df.to_csv(results_dir + 'data_pred_test' + str(i+1) + '.csv', index=False)
 
 
-if(writeDynamicResults):
-	print('dynamic')
+if(writeSimulationResults):
+	print('simulation')
 	print('rmse(stress), rmse(stress derivative), max_err(stress), max_err(stress derviative), min_err(stress), min_err(stress derivative), rse(stress), rse(stress derviative), corr(stress), corr(stress derivative)') 
 	for i in range(0,num_tests):
 	    try:
@@ -164,14 +165,13 @@ if(writeDynamicResults):
 	        original_data = np.array(data_noiter)[indices, :]
 	        prediction = pd.read_csv(results_dir + "surroHuxley"+str(i+1)+".csv", sep='\s*,\s*', engine='python')
 	        prediction = np.array(prediction.loc[::4, ['sigma','delta_sigma']])
-        	nlen = len(prediction)-time_series_steps
-        	print_metrics(original_data[0:nlen,target_columns[0]], original_data[0:nlen,target_columns[1]], prediction[0:nlen, 0], prediction[0:nlen, 1])
-        	df = pd.DataFrame(data = { 'time': original_data[0:nlen,0],
-                                     'sigma': original_data[0:nlen,target_columns[0]],
-                                     'delta_sigma': original_data[0:nlen,target_columns[1]],
-                                     'sigma pred': prediction[0:nlen, 0],
-                                     'delta_sigma pred': prediction[0:nlen,1]})
-	        df.to_csv(results_dir + 'dynamic_pred_test' + str(i+1) + '.csv', index=False)
+        	print_metrics(original_data[:,target_columns[0]], original_data[:,target_columns[1]], prediction[:, 0], prediction[:, 1])
+        	df = pd.DataFrame(data = { 'time': original_data[:,0],
+                                     'sigma': original_data[:,target_columns[0]],
+                                     'delta_sigma': original_data[:,target_columns[1]],
+                                     'sigma pred': prediction[:, 0],
+                                     'delta_sigma pred': prediction[:,1]})
+	        df.to_csv(results_dir + 'simulation_pred_test' + str(i+1) + '.csv', index=False)
 	    except:
 	        print("Error during processing test No. " + str(i+1))
 

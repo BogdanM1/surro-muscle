@@ -21,9 +21,7 @@ for file_name in os.listdir(models_directory):
   tf_session = tf.Session()
   graph = tf.get_default_graph()
   with graph.as_default(), tf_session.as_default():
-      model = load_model(model_path, custom_objects={'huber':huber_loss(),
-      'SeqSelfAttention':SeqSelfAttention,
-      'RAdam':RAdam}) if(file_name.endswith('.h5')) else joblib.load(model_path)
+      model = load_model(model_path, custom_objects={'SeqSelfAttention':SeqSelfAttention, 'RAdam':RAdam, 'huber':huber_loss()}) if(file_name.endswith('.h5')) else joblib.load(model_path)
 
   models[file_name]  = {}
   models[file_name]['model'] = model

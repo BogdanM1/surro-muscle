@@ -14,18 +14,14 @@ from keras_radam import RAdam
 commands = open("timeSeries.py").read()
 exec(commands)
 
-num_tests = 15
-
-showTestData  = False
-writeDataResults = True
+num_tests = 30
+writeDataResults  = True
 writeSimulationResults = True
 
-model_path      = '../models/model-tcn_.h5'
+model_path      = '../models/model-tcn.h5'
 use_nnet = model_path.endswith('.h5')
 use_time_series  = any(t in model_path for t in ['gru','lstm','rnn','cnn','tcn'])
-model = load_model(model_path, custom_objects={'huber':huber_loss(),
-      'SeqSelfAttention':SeqSelfAttention,
-      'RAdam':RAdam}) if(use_nnet) else joblib.load(model_path)
+model = load_model(model_path, custom_objects={'SeqSelfAttention':SeqSelfAttention, 'RAdam':RAdam, 'huber':huber_loss()}) if(use_nnet) else joblib.load(model_path)
 
 results_dir = '../results/'
 for file_name in os.listdir(results_dir):
@@ -57,19 +53,6 @@ def print_metrics(sig_orig, dsig_orig, sig_pred, dsig_pred):
 		print(str(rmse_sig)+','+str(rmse_dsig)+','+str(max_sig)+','+str(max_dsig)+','+str(min_sig)+','+str(min_dsig)
     +','+str(rse_sig)+','+str(rse_dsig)+','+str(corr_sig)+','+str(corr_dsig))
 
-def drawGraph(x, y, name, unit, testid):
-    global  results_dir
-    plt.figure(figsize=(5, 4), dpi=300)
-    plt.plot(x, y, linewidth=3.0, color='rebeccapurple')
-    plt.xlabel('Time [s]')
-    plt.xlim(left=0)	
-    plt.ylabel(name + ' ' + unit)
-    plt.ylim(bottom=0)	
-    plt.title('Test ' + str(testid) + ' - ' + name)
-    plt.tight_layout()
-    plt.savefig(results_dir + name + str(testid) + '.png')
-    plt.close()
-
 def drawGraphRes(x, y1, y2, name1, name2, title, testid):
     global results_dir
     plt.figure(figsize=(5, 4), dpi=300)
@@ -84,21 +67,6 @@ def drawGraphRes(x, y1, y2, name1, name2, title, testid):
     plt.tight_layout()
     plt.savefig(results_dir + title + str(testid) + '.png')
     plt.close()
-
-def drawTestData(data):
-    for i in range(1, num_tests + 1):
-        data_test = data.query('testid==' + str(i))
-
-        time = np.array(data_test['time'])
-        activation = np.array(data_test['activation'])
-        stretch = np.array(data_test['stretch'])
-        sigma = np.array(data_test['sigma'])
-        delta_sigma = np.array(data_test['delta_sigma'])
-
-        drawGraph(time, activation, 'Activation', '[%]',i)
-        drawGraph(time, stretch, 'Stretch', '',i)
-        drawGraph(time, sigma, 'Sigma', '[pN/nm^2]',i)
-        drawGraph(time, delta_sigma, 'Delta sigma', '[pN/nm^2]',i)
 
 def list_to_num(numList):         
     s = map(str, numList)   
@@ -128,7 +96,7 @@ def drawTestResults():
 if(writeDataResults):
 	print('data')
 	print('rmse(stress), rmse(stress derivative), max_err(stress), max_err(stress derviative), min_err(stress), min_err(stress derivative), rse(stress), rse(stress derviative), corr(stress), corr(stress derivative)') 
-	for i in range(0,num_tests):
+	for i in range(15,num_tests):
 		indices       = data_noiter.index[data_noiter['testid'] == (i+1)].tolist()
 		original_data = np.array(data_noiter)[indices, :]
 		pred_data     = np.array(data_scaled_noiter)[indices, :] if(use_nnet) else np.array(data_noiter)[indices, :]
@@ -159,7 +127,7 @@ if(writeDataResults):
 if(writeSimulationResults):
 	print('simulation')
 	print('rmse(stress), rmse(stress derivative), max_err(stress), max_err(stress derviative), min_err(stress), min_err(stress derivative), rse(stress), rse(stress derviative), corr(stress), corr(stress derivative)') 
-	for i in range(0,num_tests):
+	for i in range(15,num_tests):
 	    try:
 	        indices       = data_noiter.index[data_noiter['testid'] == (i+1)].tolist()
 	        original_data = np.array(data_noiter)[indices, :]
@@ -175,9 +143,7 @@ if(writeSimulationResults):
 	    except:
 	        print("Error during processing test No. " + str(i+1))
 
-if(showTestData): drawTestData(data_noiter)
 drawTestResults()
-results_dir = '../results/'
 for file_name in os.listdir(results_dir):
     if(file_name.endswith('.csv')):
         os.unlink(results_dir + file_name)

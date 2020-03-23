@@ -18,7 +18,7 @@ num_tests = 30
 writeDataResults  = True
 writeSimulationResults = True
 
-model_path      = '../models/model-tcn.h5'
+model_path      = '../models/model-gru.h5'
 use_nnet = model_path.endswith('.h5')
 use_time_series  = any(t in model_path for t in ['gru','lstm','rnn','cnn','tcn'])
 model = load_model(model_path, custom_objects={'SeqSelfAttention':SeqSelfAttention, 'RAdam':RAdam, 'huber':huber_loss()}) if(use_nnet) else joblib.load(model_path)

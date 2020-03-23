@@ -1,6 +1,5 @@
 from keras.callbacks import ModelCheckpoint
-from keras.layers import Dense, Dropout, GRU, Bidirectional, GaussianNoise, Input
-from keras.layers.normalization import BatchNormalization
+from keras.layers import Dense, Dropout, GRU, Bidirectional, Input
 from keras.models import  Sequential
 from numpy.random import seed
 from tensorflow import set_random_seed 
@@ -37,22 +36,23 @@ X_val = np.array(X_val)
 Y_val = np.array(Y_val)
 
 model = Sequential()
-#model.add(GaussianNoise(.1, input_shape=(time_series_steps, len(time_series_feature_columns))))
-model.add(Bidirectional(GRU(128, return_sequences=True, input_shape=(time_series_steps, len(time_series_feature_columns)))))
-#model.add(BatchNormalization())
+model.add(GRU(2048, return_sequences=True, input_shape=(time_series_steps, len(time_series_feature_columns))))
 model.add(Activation('gelu'))
-model.add(Dropout(.1))
+model.add(Dropout(.4))
 
-model.add(Bidirectional(GRU(64, return_sequences=True)))
-#model.add(BatchNormalization())
+#model.add(Bidirectional(GRU(256, return_sequences=True)))
+#model.add(Activation('gelu'))
+#model.add(Dropout(.2))
+
+model.add(Bidirectional(GRU(128, return_sequences=True)))
 model.add(Activation('gelu'))
-model.add(Dropout(.1))
+model.add(Dropout(.2))
 
 model.add(SeqSelfAttention())
 model.add(Dense(2))
 model.compile(loss='huber_loss', optimizer='radam')
 
-history = model.fit(X, Y, epochs = 10000, batch_size = 512, validation_data=(X_val, Y_val),
+history = model.fit(X, Y, epochs = 10000, batch_size = 2048, validation_data=(X_val, Y_val),
                     callbacks=[ModelCheckpoint(model_path, monitor='val_loss', save_best_only=True)])
 pd.DataFrame(history.history).to_csv("../results/train-gru.csv")
 

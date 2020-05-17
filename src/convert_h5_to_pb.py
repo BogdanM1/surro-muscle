@@ -1,4 +1,5 @@
 from keras import backend as K
+import tensorflow as tf
 from keras.models import load_model
 from keras_self_attention import SeqSelfAttention
 from keras_radam import RAdam
@@ -45,4 +46,3 @@ model = load_model(model_path, custom_objects={
 frozen_graph = freeze_session(K.get_session(), output_names=[out.op.name for out in model.outputs])
 tf.io.write_graph(frozen_graph, "../models/", "model.pb", as_text = False)
 [print(n.name) for n in frozen_graph.node]
-

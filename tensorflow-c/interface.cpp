@@ -35,8 +35,8 @@ int main() {
  /**/
   const std::vector<std::int64_t> input_dims = {2, 6};
   const std::vector<float> input_vals = {
-    .5f, .2f, .2f, .5f, 
-    .5f, .2f, .2f, .5f, 
+    .6f, .2f, .2f, .5f, 
+    .6f, .2f, .2f, .5f, 
     .3f, .2f, .2f, .2f
   };  
 /**/
@@ -54,7 +54,7 @@ int main() {
   const std::vector<TF_Tensor*> input_tensors = {tf_utils::CreateTensor(TF_FLOAT, input_dims, input_vals)};
   SCOPE_EXIT{ tf_utils::DeleteTensors(input_tensors); }; // Auto-delete on scope exit.
 
-  const std::vector<TF_Output> out_ops = {{TF_GraphOperationByName(graph, "dense_4/kernel"), 0}}; //output_node0
+  const std::vector<TF_Output> out_ops = {{TF_GraphOperationByName(graph, "dense_4/MatMul"), 0}}; //output_node0
   std::vector<TF_Tensor*> output_tensors = {nullptr};
   SCOPE_EXIT{ tf_utils::DeleteTensors(output_tensors); }; // Auto-delete on scope exit.
 

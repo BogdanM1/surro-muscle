@@ -10,6 +10,7 @@ import math
 import os
 from keras_self_attention import SeqSelfAttention
 from keras_radam import RAdam
+from keras_layer_normalization import LayerNormalization
 
 commands = open("timeSeries.py").read()
 exec(commands)
@@ -18,10 +19,15 @@ num_tests = 30
 writeDataResults  = True
 writeSimulationResults = True
 
-model_path      = '../models/model-gru.h5'
+model_path      = '../models/model-gru-tcn.h5'
 use_nnet = model_path.endswith('.h5')
 use_time_series  = any(t in model_path for t in ['gru','lstm','rnn','cnn','tcn'])
-model = load_model(model_path, custom_objects={'SeqSelfAttention':SeqSelfAttention, 'RAdam':RAdam, 'huber':huber_loss()}) if(use_nnet) else joblib.load(model_path)
+model = load_model(model_path, 
+                   custom_objects={
+				   'LayerNormalization':LayerNormalization, 
+				   'SeqSelfAttention':SeqSelfAttention,
+				   'RAdam':RAdam, 
+				   'huber':huber_loss()}) if(use_nnet) else joblib.load(model_path)
 
 results_dir = '../results/'
 for file_name in os.listdir(results_dir):
@@ -56,8 +62,8 @@ def print_metrics(sig_orig, dsig_orig, sig_pred, dsig_pred):
 def drawGraphRes(x, y1, y2, name1, name2, title, testid):
     global results_dir
     plt.figure(figsize=(5, 4), dpi=300)
-    plt.plot(x, y1, linewidth=3.0, color='rebeccapurple')
-    plt.plot(x, y2, linewidth=3.0, color='lightcoral', linestyle='--')
+    plt.plot(x, y1, linewidth=2.0, color='rebeccapurple')
+    plt.plot(x, y2, linewidth=2.0, color='lightcoral', linestyle='--')
     plt.xlabel('Time [s]')
     plt.xlim(left=0)
     plt.ylabel(title + ' [pN/nm^2]')

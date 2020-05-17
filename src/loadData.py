@@ -6,7 +6,6 @@ from keras.layers import Activation, LeakyReLU
 from keras import optimizers
 from keras_radam import RAdam
 
-
 feature_columns = [1, 2, 3, 4, 5, 6]
 target_columns  = [7, 8]
 data          = pd.read_csv("../data/dataMexie.csv")
@@ -37,9 +36,3 @@ class GeLU(Activation):
         super(GeLU, self).__init__(activation, **kwargs)
         self.__name__ = 'gelu'    
 get_custom_objects().update({'gelu': GeLU(gelu)})
-
-# leaky-relu 
-get_custom_objects().update({'leaky-relu': Activation(LeakyReLU(alpha=.2))})
-
-# radam 
-get_custom_objects().update({'radam': RAdam()})

@@ -1,15 +1,13 @@
-# from https://github.com/philipperemy/keras-tcn
-
-
 import keras.backend as K
 import keras.layers
 from keras import optimizers
 from keras.engine.topology import Layer
 from keras.layers import Activation, Lambda
 from keras.layers import Conv1D, SpatialDropout1D
-from keras.layers import Convolution1D, Dense
+from keras.layers import Convolution1D, Dense, BatchNormalization
 from keras.models import Input, Model
 from typing import List, Tuple
+from keras_layer_normalization import LayerNormalization
 
 
 def channel_normalization(x):
@@ -41,7 +39,9 @@ def wave_net_activation(x):
     return keras.layers.multiply([tanh_out, sigm_out])
 
 
-def residual_block(x, s, i, activation, nb_filters, kernel_size, padding, dropout_rate=0, name=''):
+def residual_block(x, s, i, activation, nb_filters, kernel_size, padding, 
+                   use_layer_norm = False, use_batch_norm = False,
+				   dropout_rate=0, name=''):
     # type: (Layer, int, int, str, int, int, float, str) -> Tuple[Layer, Layer]
     """Defines the residual block for the WaveNet TCN
     Args:
@@ -52,6 +52,8 @@ def residual_block(x, s, i, activation, nb_filters, kernel_size, padding, dropou
         nb_filters: The number of convolutional filters to use in this block
         kernel_size: The size of the convolutional kernel
         padding: The padding used in the convolutional layers, 'same' or 'causal'.
+		use_layer_norm: Boolean, use layer normalization
+		use_batch_norm: Boolean, use batch normalization
         dropout_rate: Float between 0 and 1. Fraction of the input units to drop.
         name: Name of the model. Useful when having multiple TCN.
     Returns:
@@ -63,6 +65,7 @@ def residual_block(x, s, i, activation, nb_filters, kernel_size, padding, dropou
     conv = Conv1D(filters=nb_filters, kernel_size=kernel_size,
                   dilation_rate=i, padding=padding,
                   name=name + '_dilated_conv_%d_tanh_s%d' % (i, s))(x)
+				  
     if activation == 'norm_relu':
         x = Activation('relu')(conv)
         x = Lambda(channel_normalization)(x)
@@ -70,6 +73,12 @@ def residual_block(x, s, i, activation, nb_filters, kernel_size, padding, dropou
         x = wave_net_activation(conv)
     else:
         x = Activation(activation)(conv)
+				  
+    if(use_layer_norm):
+        x = LayerNormalization()(x)
+				  
+    if(use_batch_norm):
+        x = BatchNormalization()(x)		
 
     x = SpatialDropout1D(dropout_rate, name=name + '_spatial_dropout1d_%d_s%d_%f' % (i, s, dropout_rate))(x)
 
@@ -88,7 +97,6 @@ def process_dilations(dilations):
 
     else:
         new_dilations = [2 ** i for i in dilations]
-        # print(f'Updated dilations from {dilations} to {new_dilations} because of backwards compatibility.')
         return new_dilations
 
 
@@ -103,7 +111,9 @@ class TCN(Layer):
             activation: The activations to use (norm_relu, wavenet, relu...).
             padding: The padding to use in the convolutional layers, 'causal' or 'same'.
             use_skip_connections: Boolean. If we want to add skip connections from input to each residual block.
-            return_sequences: Boolean. Whether to return the last output in the output sequence, or the full sequence.
+			use_layer_norm: Boolean, use layer normalization
+			use_batch_norm: Boolean, use batch normalization            
+			return_sequences: Boolean. Whether to return the last output in the output sequence, or the full sequence.
             dropout_rate: Float between 0 and 1. Fraction of the input units to drop.
             name: Name of the model. Useful when having multiple TCN.
         Returns:
@@ -120,6 +130,8 @@ class TCN(Layer):
                  use_skip_connections=True,
                  dropout_rate=0.0,
                  return_sequences=True,
+				 use_layer_norm = False,
+				 use_batch_norm =False,
                  name='tcn'):
         super().__init__()
         self.name = name
@@ -132,7 +144,9 @@ class TCN(Layer):
         self.kernel_size = kernel_size
         self.nb_filters = nb_filters
         self.padding = padding
-
+        self.use_layer_norm = use_layer_norm
+        self.use_batch_norm = use_batch_norm
+        
         # backwards incompatibility warning.
         # o = tcn.TCN(i, return_sequences=False) =>
         # o = tcn.TCN(return_sequences=False)(i)
@@ -156,7 +170,9 @@ class TCN(Layer):
         for s in range(self.nb_stacks):
             for i in self.dilations:
                 x, skip_out = residual_block(x, s, i, self.activation, self.nb_filters,
-                                             self.kernel_size, self.padding, self.dropout_rate, name=self.name)
+                                             self.kernel_size, self.padding,
+											 self.use_layer_norm, self.use_batch_norm,
+											 self.dropout_rate, name=self.name)
                 skip_connections.append(skip_out)
         if self.use_skip_connections:
             x = keras.layers.add(skip_connections)

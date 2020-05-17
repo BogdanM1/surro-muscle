@@ -1,6 +1,7 @@
 from keras.callbacks import ModelCheckpoint
 from keras.layers import Dense, Dropout, GRU, Bidirectional, Input
-from keras.models import  Sequential
+from keras.layers.normalization import BatchNormalization
+from keras.models import  Sequential, load_model
 from numpy.random import seed
 from tensorflow import set_random_seed 
 from keras_self_attention import SeqSelfAttention
@@ -35,24 +36,21 @@ for i in range(16,20,1):
 X_val = np.array(X_val)
 Y_val = np.array(Y_val)
 
+
 model = Sequential()
-model.add(GRU(2048, return_sequences=True, input_shape=(time_series_steps, len(time_series_feature_columns))))
-model.add(Activation('gelu'))
-model.add(Dropout(.4))
+model.add(Bidirectional(GRU(256, return_sequences=True, input_shape=(time_series_steps, len(time_series_feature_columns)))))
+model.add(Dropout(.2))
 
-#model.add(Bidirectional(GRU(256, return_sequences=True)))
-#model.add(Activation('gelu'))
-#model.add(Dropout(.2))
-
-model.add(Bidirectional(GRU(128, return_sequences=True)))
-model.add(Activation('gelu'))
+model.add(Bidirectional(GRU(256, return_sequences=True)))
 model.add(Dropout(.2))
 
 model.add(SeqSelfAttention())
 model.add(Dense(2))
-model.compile(loss='huber_loss', optimizer='radam')
+model.compile(loss='huber_loss', optimizer=RAdam())
 
-history = model.fit(X, Y, epochs = 10000, batch_size = 2048, validation_data=(X_val, Y_val),
+#model = load_model(model_path, custom_objects={'SeqSelfAttention':SeqSelfAttention, 'RAdam':RAdam, 'huber':huber_loss()})
+
+history = model.fit(X, Y, epochs = 10000, batch_size = 1024, validation_data=(X_val, Y_val),
                     callbacks=[ModelCheckpoint(model_path, monitor='val_loss', save_best_only=True)])
 pd.DataFrame(history.history).to_csv("../results/train-gru.csv")
 

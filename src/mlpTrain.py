@@ -29,6 +29,6 @@ model.add(Dropout(0.1))
 model.add(Dense(2))
 model.compile(loss='mse', optimizer='adam')
 
-history = model.fit(X, Y, epochs = 500, batch_size = 64, validation_data=(X_val, Y_val),
+history = model.fit(X, Y, epochs = 5, batch_size = 64, validation_data=(X_val, Y_val),
                     callbacks=[ModelCheckpoint(model_path, save_best_only=True)])
 pd.DataFrame(history.history).to_csv("../results/train.csv")

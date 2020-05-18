@@ -36,7 +36,7 @@ def freeze_session(session, keep_var_names=None, output_names=None, clear_device
             session, input_graph_def, output_names, freeze_var_names)
         return frozen_graph
 
-model_path    = '../models/model-mlp.h5'
+model_path    = '../models/model-gru-tcn.h5'
 K.set_learning_phase(0)	
 model = load_model(model_path, custom_objects={
 	  'LayerNormalization':LayerNormalization,

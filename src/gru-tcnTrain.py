@@ -47,7 +47,7 @@ o = Dense(2, name='output_layer') (o)
 model = Model(inputs = [i], outputs=[o])
 model.compile(loss=huber_loss(), optimizer=RAdam())
 print(model.summary())
-history = model.fit(X, Y, epochs = 10000, batch_size = 2048, validation_data = (X_val, Y_val),
+history = model.fit(X, Y, epochs = 5000, batch_size = 2048, validation_data = (X_val, Y_val),
 					callbacks = [ModelCheckpoint(model_path, monitor = 'val_loss', save_best_only = True)])
 pd.DataFrame(history.history).to_csv("../results/train-grutcn.csv")
 

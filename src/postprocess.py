@@ -10,12 +10,11 @@ import math
 import os
 from keras_self_attention import SeqSelfAttention
 from keras_radam import RAdam
-from keras_layer_normalization import LayerNormalization
 
 commands = open("timeSeries.py").read()
 exec(commands)
 
-num_tests = 30
+num_tests = 41
 writeDataResults  = True
 writeSimulationResults = True
 
@@ -24,7 +23,6 @@ use_nnet = model_path.endswith('.h5')
 use_time_series  = any(t in model_path for t in ['gru','lstm','rnn','cnn','tcn'])
 model = load_model(model_path, 
                    custom_objects={
-				   'LayerNormalization':LayerNormalization, 
 				   'SeqSelfAttention':SeqSelfAttention,
 				   'RAdam':RAdam, 
 				   'huber':huber_loss()}) if(use_nnet) else joblib.load(model_path)

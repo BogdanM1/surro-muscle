@@ -26,13 +26,4 @@ def huber_loss(tolerance=.01):
         linear_loss = tolerance*tf.abs(error) - tolerance*tolerance*0.5 
         return tf.where(is_small_error, squared_loss, linear_loss)
     return huber
-get_custom_objects().update({'huber_loss': huber_loss(tolerance=.01)})
 
-# gelu  
-def gelu(x):
-    return 0.5 * x * (1 + tf.tanh(tf.sqrt(2 / np.pi) * (x + 0.044715 * tf.pow(x, 3))))
-class GeLU(Activation):
-    def __init__(self, activation, **kwargs):
-        super(GeLU, self).__init__(activation, **kwargs)
-        self.__name__ = 'gelu'    
-get_custom_objects().update({'gelu': GeLU(gelu)})

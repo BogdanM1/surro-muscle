@@ -17,7 +17,7 @@ model_path    = '../models/model-gru-tcn.h5'
 
 X = []
 Y = []
-for i in range(1,37,2):
+for i in range(1,27,2):
     indices = data['testid'].isin([i])
     for x in InputToTimeSeries(data_scaled[indices][:,time_series_feature_columns], np.array(data.loc[indices,'converged'])):
         X.append(x)
@@ -28,7 +28,7 @@ Y = np.array(Y)
 
 X_val = []
 Y_val = []
-for i in range(2,38,2):
+for i in range(2,28,2):
     indices = data_noiter['testid'].isin([i])
     for x in InputToTimeSeries(data_scaled_noiter[indices][:, time_series_feature_columns]):
         X_val.append(x)
@@ -47,7 +47,7 @@ o = Dense(2, name='output_layer') (o)
 model = Model(inputs = [i], outputs=[o])
 model.compile(loss=huber_loss(), optimizer=RAdam())
 print(model.summary())
-history = model.fit(X, Y, epochs = 20000, batch_size = 1024, validation_data = (X_val, Y_val),
+history = model.fit(X, Y, epochs = 10000, batch_size = 2048, validation_data = (X_val, Y_val),
 					callbacks = [ModelCheckpoint(model_path, monitor = 'val_loss', save_best_only = True)])
 pd.DataFrame(history.history).to_csv("../results/train-grutcn.csv")
 

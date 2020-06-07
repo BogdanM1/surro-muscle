@@ -5,6 +5,9 @@ from keras.utils.generic_utils import get_custom_objects
 from keras.layers import Activation, LeakyReLU
 from keras import optimizers
 from keras_radam import RAdam
+from keras import backend as K
+
+K.set_floatx('float64')
 
 feature_columns = [1, 2, 3, 4, 5, 6]
 target_columns  = [7, 8]

@@ -1,4 +1,3 @@
-from keras import backend as K
 import tensorflow as tf
 from keras.models import load_model
 from keras_self_attention import SeqSelfAttention

@@ -1,1 +1,0 @@
-/usr/bin/c++    -rdynamic CMakeFiles/surro_test.dir/src/surrogate_interface.cpp.o CMakeFiles/surro_test.dir/src/tf_utils.cpp.o  -o surro_test   -L/home/bogdan/tensorflow/lib  -Wl,-rpath,/home/bogdan/tensorflow/lib -ltensorflow 

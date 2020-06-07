@@ -1,3 +1,0 @@
-/home/bogdan/surro-muscle/src/surro-interface/build/CMakeFiles/rebuild_cache.dir
-/home/bogdan/surro-muscle/src/surro-interface/build/CMakeFiles/surro_test.dir
-/home/bogdan/surro-muscle/src/surro-interface/build/CMakeFiles/edit_cache.dir

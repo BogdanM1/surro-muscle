@@ -1,5 +1,5 @@
 from sklearn.linear_model import LinearRegression
-from sklearn.externals import joblib
+import joblib
 from sklearn.utils import shuffle
 import numpy as np
 
@@ -15,3 +15,7 @@ Y = training_data[:, target_columns]
 model =   LinearRegression()
 model.fit(X, Y)
 joblib.dump(model, model_path)
+
+print('intercept:', model.intercept_)
+print('slope:', model.coef_)
+

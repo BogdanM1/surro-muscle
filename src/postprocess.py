@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 from keras.models import load_model
-from sklearn.externals import joblib
+import joblib
 from sklearn.metrics import mean_squared_error
 import math
 import os
@@ -18,7 +18,8 @@ num_tests = 41
 writeDataResults  = True
 writeSimulationResults = True
 
-model_path      = '../models/model-gru-tcn.h5'
+#model_path      = '../models/regr.sav' 
+model_path = '../models/model-gru-tcn.h5'
 use_nnet = model_path.endswith('.h5')
 use_time_series  = any(t in model_path for t in ['gru','lstm','rnn','cnn','tcn'])
 model = load_model(model_path, 

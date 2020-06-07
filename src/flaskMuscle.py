@@ -95,7 +95,7 @@ def prediction():
   stretch =  np.array(params['stretch'].split(','), dtype='f')
   sigma_prev = np.array(params['sigma_prev'].split(','), dtype='f')
   delta_sigma_prev = np.array(params['delta_sigma_prev'].split(','), dtype='f') 
-
+  print('act, stretch, sig, dsig', activation[0], stretch[0], sigma_prev[0], delta_sigma_prev[0])
   if(time_series == 0):
     activation_prev = np.array(params['activation_prev'].split(','), dtype='f')
     stretch_prev = np.array(params['stretch_prev'].split(','), dtype='f')
@@ -125,14 +125,17 @@ def prediction():
     simulation_data[simulation_id]['ts_input'] = input
 
   with graph.as_default(), tf_session.as_default():
+    print(input[0])
     tmp_predicted = model.predict(input)
     if (len(tmp_predicted.shape) == 2):
       predicted = tmp_predicted
     else:
       predicted[:, :] = tmp_predicted[:, time_series_steps - 1, :]
   if (b_neural_net):
+    print('sigma/dsigma scaled ',predicted[0,0], predicted[0,1])
     sigma_predicted = predicted[:, 0] * scaler.data_range_[target_columns[0]] + scaler.data_min_[target_columns[0]]
     dsigma_predicted = predicted[:, 1] * scaler.data_range_[target_columns[1]] + scaler.data_min_[target_columns[1]]
+    print('sigma/dsigma ',sigma_predicted[0], dsigma_predicted[0])
   else:
     sigma_predicted = predicted[:, 0]
     dsigma_predicted = predicted[:, 1]

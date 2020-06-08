@@ -16,8 +16,8 @@ TF_Session* surro_session;
 vector<TF_Output> surro_input_ops;
 vector<TF_Output> surro_out_ops;
 vector<int64_t> surro_input_dims;
-vector<double> surro_input_values;
-vector<double> output_values; 
+vector<float> surro_input_values;
+vector<float> output_values; 
 
 double surro_scale_min[nfeatures+ntargets];
 double surro_scale_max[nfeatures+ntargets];
@@ -106,7 +106,7 @@ void surro_converged()
 
 void surro_predict()
 {
-	vector<TF_Tensor*> input_tensors = {tf_utils::CreateTensor(TF_DOUBLE, surro_input_dims, surro_input_values)};
+	vector<TF_Tensor*> input_tensors = {tf_utils::CreateTensor(TF_FLOAT, surro_input_dims, surro_input_values)};
  	vector<TF_Tensor*> output_tensors = {nullptr};	
  
  /**************** debug *******************/
@@ -117,7 +117,7 @@ void surro_predict()
  /*******************************************/
  
 	tf_utils::RunSession(surro_session, surro_input_ops, input_tensors, surro_out_ops, output_tensors);
-	output_values = tf_utils::GetTensorData<double>(output_tensors[0]);
+	output_values = tf_utils::GetTensorData<float>(output_tensors[0]);
 	tf_utils::DeleteTensors(input_tensors);
 	tf_utils::DeleteTensors(output_tensors);	
  
@@ -184,7 +184,7 @@ int main()
  0., 1., 0, 0
   };
  
-	vector<TF_Tensor*> input_tensors = {tf_utils::CreateTensor(TF_DOUBLE, surro_input_dims, surro_input_values)};
+	vector<TF_Tensor*> input_tensors = {tf_utils::CreateTensor(TF_FLOAT, surro_input_dims, surro_input_values)};
  	vector<TF_Tensor*> output_tensors = {nullptr};	
 //	vector<TF_Tensor*> output_tensors = {tf_utils::CreateEmptyTensor(TF_FLOAT, {surro_nqpoints, ntargets}, surro_nqpoints*ntargets*sizeof(float))};	
  
@@ -198,7 +198,7 @@ int main()
  /*******************************************/
  
 	tf_utils::RunSession(surro_session, surro_input_ops, input_tensors, surro_out_ops, output_tensors);
-	output_values = tf_utils::GetTensorData<double>(output_tensors[0]);
+	output_values = tf_utils::GetTensorData<float>(output_tensors[0]);
 	tf_utils::DeleteTensors(input_tensors);
 	tf_utils::DeleteTensors(output_tensors);	
  

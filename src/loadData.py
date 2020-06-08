@@ -7,7 +7,7 @@ from keras import optimizers
 from keras_radam import RAdam
 from keras import backend as K
 
-K.set_floatx('float64')
+K.set_floatx('float32')
 
 feature_columns = [1, 2, 3, 4, 5, 6]
 target_columns  = [7, 8]

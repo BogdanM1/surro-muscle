@@ -17,6 +17,26 @@ data_noiter   = pd.read_csv("../data/dataMexieNoIter.csv")
 scaler = MinMaxScaler(feature_range=(0,1))
 scaler.fit(data)
 
+# stress scale equally input and output 
+scaler.data_min_[5] = min(scaler.data_min_[5], scaler.data_min_[7])
+scaler.data_min_[7] = scaler.data_min_[5]
+#
+scaler.data_max_[5] = max(scaler.data_max_[5], scaler.data_max_[7])
+scaler.data_max_[7] = scaler.data_max_[5]
+#
+scaler.data_range_[5] = scaler.data_max_[5] - scaler.data_min_[5]
+scaler.data_range_[7] = scaler.data_range_[7]
+
+# stress derivative scale equally input and output 
+scaler.data_min_[6] = min(scaler.data_min_[6], scaler.data_min_[8])
+scaler.data_min_[8] = scaler.data_min_[8]
+#
+scaler.data_max_[6] = max(scaler.data_max_[6], scaler.data_max_[8])
+scaler.data_max_[8] = scaler.data_max_[6]
+#
+scaler.data_range_[6] = scaler.data_max_[6] - scaler.data_min_[6]
+scaler.data_range_[8] = scaler.data_range_[6]
+#########################################
 data_scaled        = scaler.transform(data)
 data_scaled_noiter = scaler.transform(data_noiter)
 

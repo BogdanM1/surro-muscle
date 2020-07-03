@@ -101,7 +101,7 @@ def drawTestResults():
 if(writeDataResults):
 	print('data')
 	print('rmse(stress), rmse(stress derivative), max_err(stress), max_err(stress derviative), min_err(stress), min_err(stress derivative), rse(stress), rse(stress derviative), corr(stress), corr(stress derivative)') 
-	for i in range(15,num_tests):
+	for i in range(0,num_tests):
 		indices       = data_noiter.index[data_noiter['testid'] == (i+1)].tolist()
 		original_data = np.array(data_noiter)[indices, :]
 		pred_data     = np.array(data_scaled_noiter)[indices, :] if(use_nnet) else np.array(data_noiter)[indices, :]
@@ -132,7 +132,7 @@ if(writeDataResults):
 if(writeSimulationResults):
 	print('simulation')
 	print('rmse(stress), rmse(stress derivative), max_err(stress), max_err(stress derviative), min_err(stress), min_err(stress derivative), rse(stress), rse(stress derviative), corr(stress), corr(stress derivative)') 
-	for i in range(15,num_tests):
+	for i in range(0,num_tests):
 	    try:
 	        indices       = data_noiter.index[data_noiter['testid'] == (i+1)].tolist()
 	        original_data = np.array(data_noiter)[indices, :]

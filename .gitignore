@@ -1,6 +1,6 @@
 src/.Rhistory
 src/.RData
-src/screenlog*
+src/*.0
 src/__pycache*
 data/tests/testLarge*
 data/dataMexieLarge*

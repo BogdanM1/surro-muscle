@@ -1,8 +1,8 @@
 src/.Rhistory
 src/.RData
-models/*.html
-models/*.txt
-models/sigma_files/*.*
-models/dsigma_files/*.*
-data/jezik.csv
+src/screenlog*
+src/__pycache*
+data/tests/testLarge*
+data/dataMexieLarge*
 results/*
+

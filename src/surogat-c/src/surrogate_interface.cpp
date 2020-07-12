@@ -86,6 +86,7 @@ void surro_converged()
 {
 	// shift everything by one time steps
 	int current_step_index, next_step_index, vec_index;
+  double stress, dstress;
 	for(int iqpoint = 0; iqpoint < surro_nqpoints; iqpoint++)
 	{		
 		for(int istep = 0; istep < ntimesteps-1; istep++)

@@ -4,11 +4,9 @@ from keras import optimizers
 from keras.engine.topology import Layer
 from keras.layers import Activation, Lambda
 from keras.layers import Conv1D, SpatialDropout1D
-from keras.layers import Convolution1D, Dense, BatchNormalization
+from keras.layers import Convolution1D, Dense
 from keras.models import Input, Model
 from typing import List, Tuple
-from keras_layer_normalization import LayerNormalization
-
 
 def channel_normalization(x):
     # type: (Layer) -> Layer
@@ -40,8 +38,8 @@ def wave_net_activation(x):
 
 
 def residual_block(x, s, i, activation, nb_filters, kernel_size, padding, 
-                   use_layer_norm = False, use_batch_norm = False,
-				   dropout_rate=0, name=''):
+                   kernel_initializer = "glorot_uniform",
+		   dropout_rate=0, name=''):
     # type: (Layer, int, int, str, int, int, float, str) -> Tuple[Layer, Layer]
     """Defines the residual block for the WaveNet TCN
     Args:
@@ -62,7 +60,7 @@ def residual_block(x, s, i, activation, nb_filters, kernel_size, padding,
     """
 
     original_x = x
-    conv = Conv1D(filters=nb_filters, kernel_size=kernel_size,
+    conv = Conv1D(filters=nb_filters, kernel_size=kernel_size, kernel_initializer = kernel_initializer,
                   dilation_rate=i, padding=padding,
                   name=name + '_dilated_conv_%d_tanh_s%d' % (i, s))(x)
 				  
@@ -72,13 +70,7 @@ def residual_block(x, s, i, activation, nb_filters, kernel_size, padding,
     elif activation == 'wavenet':
         x = wave_net_activation(conv)
     else:
-        x = Activation(activation)(conv)
-				  
-    if(use_layer_norm):
-        x = LayerNormalization()(x)
-				  
-    if(use_batch_norm):
-        x = BatchNormalization()(x)		
+        x = Activation(activation)(conv)		
 
     x = SpatialDropout1D(dropout_rate, name=name + '_spatial_dropout1d_%d_s%d_%f' % (i, s, dropout_rate))(x)
 
@@ -130,8 +122,7 @@ class TCN(Layer):
                  use_skip_connections=True,
                  dropout_rate=0.0,
                  return_sequences=True,
-				 use_layer_norm = False,
-				 use_batch_norm =False,
+                 kernel_initializer="glorot_uniform",
                  name='tcn'):
         super().__init__()
         self.name = name
@@ -144,8 +135,7 @@ class TCN(Layer):
         self.kernel_size = kernel_size
         self.nb_filters = nb_filters
         self.padding = padding
-        self.use_layer_norm = use_layer_norm
-        self.use_batch_norm = use_batch_norm
+        self.kernel_initializer = kernel_initializer
         
         # backwards incompatibility warning.
         # o = tcn.TCN(i, return_sequences=False) =>
@@ -165,18 +155,18 @@ class TCN(Layer):
         if self.dilations is None:
             self.dilations = [1, 2, 4, 8, 16, 32]
         x = inputs
-        x = Convolution1D(self.nb_filters, 1, padding=self.padding, name=self.name + '_initial_conv')(x)
+        x = Convolution1D(self.nb_filters, 1, padding=self.padding, name=self.name + '_initial_conv', kernel_initializer = self.kernel_initializer)(x)
         skip_connections = []
         for s in range(self.nb_stacks):
             for i in self.dilations:
                 x, skip_out = residual_block(x, s, i, self.activation, self.nb_filters,
                                              self.kernel_size, self.padding,
-											 self.use_layer_norm, self.use_batch_norm,
-											 self.dropout_rate, name=self.name)
+                              					     self.kernel_initializer,
+                              					     self.dropout_rate, name=self.name)
                 skip_connections.append(skip_out)
         if self.use_skip_connections:
             x = keras.layers.add(skip_connections)
-        x = Activation('relu')(x)
+        x = Activation("selu")(x)
 
         if not self.return_sequences:
             output_slice_index = -1

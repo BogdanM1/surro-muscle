@@ -58,11 +58,11 @@ def print_metrics(sig_orig, dsig_orig, sig_pred, dsig_pred):
 		print(str(rmse_sig)+','+str(rmse_dsig)+','+str(max_sig)+','+str(max_dsig)+','+str(min_sig)+','+str(min_dsig)
     +','+str(rse_sig)+','+str(rse_dsig)+','+str(corr_sig)+','+str(corr_dsig))
 
-def drawGraphRes(x, y1, y2, name1, name2, title, testid):
+def drawGraphRes(x, y1, y2, name1, name2, title, testid, dotted=False):
     global results_dir
     plt.figure(figsize=(5, 4), dpi=300)
-    plt.plot(x, y1, linewidth=2.0, color='rebeccapurple')
-    plt.plot(x, y2, linewidth=2.0, color='lightcoral', linestyle='--')
+    plt.plot(x, y1, linewidth=2.0, color='rebeccapurple', linestyle=':' if (dotted) else '-')
+    plt.plot(x, y2, linewidth=2.0, color='lightcoral', linestyle=':' if (dotted) else '--')
     plt.xlabel('Time [s]')
     plt.xlim(left=0)
     plt.ylabel(title + ' [pN/nm^2]')
@@ -92,8 +92,8 @@ def drawTestResults():
         delta_sigma_pred = np.array(data['delta_sigma pred'])
         testid = list_to_num([int(s) for s in file_name if s.isdigit()])
         if file_name.startswith('data'):
-            drawGraphRes(time, sigma, sigma_pred, 'Original model', 'Surrogate model', 'Stress', testid)
-            drawGraphRes(time, delta_sigma, delta_sigma_pred, 'Original model', 'Surrogate model','Stress derivative', testid)
+            drawGraphRes(time, sigma, sigma_pred, 'Original model', 'Surrogate model', 'Stress', testid, dotted=True)
+            drawGraphRes(time, delta_sigma, delta_sigma_pred, 'Original model', 'Surrogate model','Stress derivative', testid, dotted=True)
         else:
             drawGraphRes(time, sigma, sigma_pred, 'Original model', 'Surrogate model', 'Stress (simulation)', testid)
             drawGraphRes(time, delta_sigma, delta_sigma_pred, 'Original model', 'Surrogate model', 'Stress derivative (simulation)', testid)

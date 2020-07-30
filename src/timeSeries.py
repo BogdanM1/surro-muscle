@@ -1,7 +1,6 @@
 commands = open("loadData.py").read()
 exec(commands)
 
-import numpy as np
 time_series_steps = 11
 time_series_feature_columns = np.array([2, 4, 5, 6]) 
 

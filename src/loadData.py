@@ -7,6 +7,7 @@ from keras.layers import Activation, LeakyReLU
 from keras import optimizers
 from keras_radam import RAdam
 from keras import backend as K
+import itertools
 
 K.set_floatx('float32')
 
@@ -15,20 +16,22 @@ target_columns  = [7, 8]
 
 data = pd.read_csv("../data/dataMexie.csv")
 data_noiter = pd.read_csv("../data/dataMexieNoIter.csv")
-#data_large  = pd.read_csv("../data/dataMexieLargeModel.csv")
-#data_noiter_large = pd.read_csv("../data/dataMexieLargeModelNoIter.csv")
+'''
+data_large  = pd.read_csv("../data/dataMexieLargeModel.csv")
+data_noiter_large = pd.read_csv("../data/dataMexieLargeModelNoIter.csv")
 
-#data = data.append(data_large)
-#data_noiter = data_noiter.append(data_noiter_large) 
-#del data_large
-#del data_noiter_large
+data = data.append(data_large)
+data_noiter = data_noiter.append(data_noiter_large) 
+del data_large
+del data_noiter_large
+'''
 
 scaler = MinMaxScaler(feature_range=(0,1))
 
 chunk_size=10000
-for start in range(0, data.shape[0], chunk_size):
-    df_subset = data.iloc[start:start + chunk_size]
-    scaler.partial_fit(df_subset)
+for i in itertools.chain(range(4,50), range(60,80)): 
+    indices = data['testid'].isin([i])
+    scaler.partial_fit(data[indices])
 
 for start in range(0, data.shape[0], chunk_size):
   df_subset = data.iloc[start:start + chunk_size]

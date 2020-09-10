@@ -2,7 +2,7 @@ import tensorflow as tf
 from keras.models import load_model
 from keras_self_attention import SeqSelfAttention
 from keras_radam import RAdam
-from keras_layer_normalization import LayerNormalization
+from nested_lstm import NestedLSTM
 
 commands = open("timeSeries.py").read()
 exec(commands)
@@ -38,10 +38,8 @@ def freeze_session(session, keep_var_names=None, output_names=None, clear_device
 model_path    = '../models/model-gru-tcn.h5'
 K.set_learning_phase(0)	
 model = load_model(model_path, custom_objects={
-	  'LayerNormalization':LayerNormalization,
-	  'SeqSelfAttention':SeqSelfAttention, 
-	  'RAdam':RAdam, 
-	  'huber':huber_loss()})	  
+    'NestedLSTM': NestedLSTM,'RAdam':RAdam,'smape':smape,
+    'SeqSelfAttention':SeqSelfAttention, 'huber':huber_loss()})	  
 frozen_graph = freeze_session(K.get_session(), output_names=[out.op.name for out in model.outputs])
 tf.io.write_graph(frozen_graph, "../models/", "model.pb", as_text = False)
 [print(n.name) for n in frozen_graph.node]

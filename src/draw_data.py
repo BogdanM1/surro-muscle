@@ -6,7 +6,7 @@ import numpy as np
 
 commands = open("loadData.py").read()
 exec(commands)
-num_tests = 41
+num_tests = 90
 results_dir = '../results/'
 ca_dir = '../../boxieMexie/mexie_exe/FEMSolver/build/tests/'
 

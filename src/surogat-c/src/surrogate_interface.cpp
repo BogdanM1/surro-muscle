@@ -7,7 +7,9 @@ using std::vector;
 #define nfeatures 4
 #define ntargets 2
 #define ntimesteps 11
- 
+
+#define scaler_range 1.0
+#define scaler_min (0.0) 
  
 int surro_fem_execution_phase; // 0 - init , 1 - first iteration of the first step, 2 - any other 
 int surro_nqpoints; 
@@ -19,8 +21,8 @@ vector<int64_t> surro_input_dims;
 vector<float> surro_input_values;
 vector<float> output_values;
 
-double surro_scale_min[nfeatures+ntargets];
-double surro_scale_max[nfeatures+ntargets];
+double surro_data_min[nfeatures+ntargets];
+double surro_data_range[nfeatures+ntargets];
 
 void surro_init(int* n_qpoints, char* model_path, char* min_max_file)
 {
@@ -51,23 +53,25 @@ void surro_init(int* n_qpoints, char* model_path, char* min_max_file)
 	}	
  
   string line;
-  ifstream min_max_stream(min_max_file);
-  getline(min_max_stream, line);
+  ifstream min_range_stream(min_max_file);
+  getline(min_range_stream, line);
   for(int i=0; i < (nfeatures+ntargets); i++)
-    min_max_stream >> surro_scale_min[i];
-  getline(min_max_stream, line);
-  getline(min_max_stream, line);
+    min_range_stream >> surro_data_min[i];
+  getline(min_range_stream, line);
+  getline(min_range_stream, line);
   for(int i=0; i < (nfeatures+ntargets); i++)
-    min_max_stream >> surro_scale_max[i];    
-  min_max_stream.close();
+    min_range_stream >> surro_data_range[i];    
+  min_range_stream.close();
 }
 
 void surro_set_values(int * qindex, double* stretch, double* activation, int *fstStepfstIter)
 {
 	int vec_index = (*qindex)*ntimesteps*nfeatures + (ntimesteps - 1)*nfeatures;
   // if(*qindex==0) printf("act, stretch: %.19lf %.19lf\n", *activation, *stretch);
-	surro_input_values[vec_index] = (*activation - surro_scale_min[0])/( surro_scale_max[0] - surro_scale_min[0] );
-	surro_input_values[vec_index + 1] = (*stretch - surro_scale_min[1])/( surro_scale_max[1] - surro_scale_min[1] );	
+	surro_input_values[vec_index] = (*activation - surro_data_min[0])/(surro_data_range[0]);
+	surro_input_values[vec_index] = surro_input_values[vec_index] * scaler_range + scaler_min;
+	surro_input_values[vec_index + 1] = (*stretch - surro_data_min[1])/( surro_data_range[1] );	
+  surro_input_values[vec_index + 1] = surro_input_values[vec_index + 1] * scaler_range + scaler_min;
   // if(*qindex==0) printf("act, stretch scaled: %.19lf %.19lf\n", surro_input_values[vec_index], surro_input_values[vec_index+1]);
 	// vector is filled-in for the first time: previous time steps are set to be the same as current step
 	if(*fstStepfstIter == 1)
@@ -102,11 +106,16 @@ void surro_converged()
     dstress = output_values[iqpoint * ntargets + 1];
     
     // scale 
-    stress = stress*(surro_scale_max[nfeatures]-surro_scale_min[nfeatures]) + surro_scale_min[nfeatures];
-    dstress = dstress*(surro_scale_max[nfeatures+1]-surro_scale_min[nfeatures+1]) + surro_scale_min[nfeatures+1];
-    // descale 
-    stress = (stress - surro_scale_min[nfeatures-2])/(surro_scale_max[nfeatures-2] - surro_scale_min[nfeatures-2]);
-    dstress = (dstress - surro_scale_min[nfeatures-1])/(surro_scale_max[nfeatures-1] - surro_scale_min[nfeatures-1]);
+    stress = (stress - scaler_min) / scaler_range;
+    stress = stress*surro_data_range[nfeatures] + surro_data_min[nfeatures];
+    dstress = (dstress - scaler_min) / scaler_range;
+	  dstress = dstress*surro_data_range[nfeatures+1] + surro_data_min[nfeatures+1];
+
+	// descale  
+    stress = (stress - surro_data_min[nfeatures-2])/surro_data_range[nfeatures-2];
+    stress = stress * scaler_range + scaler_min;  
+    dstress = (dstress - surro_data_min[nfeatures-1])/surro_data_range[nfeatures-1];
+    dstress = dstress * scaler_range + scaler_min; 
         
 		surro_input_values[vec_index + 2] = stress;
 		surro_input_values[vec_index + 3] = dstress;	    
@@ -142,8 +151,10 @@ void surro_predict()
 
 void surro_get_values(int *qindex, double * stress, double * dstress)
 {
-	*stress = output_values[(*qindex) * ntargets] *(surro_scale_max[nfeatures]-surro_scale_min[nfeatures]) + surro_scale_min[nfeatures];
-	*dstress = output_values[(*qindex) * ntargets + 1] * (surro_scale_max[nfeatures+1]-surro_scale_min[nfeatures+1]) + surro_scale_min[nfeatures+1];
+  *stress = (output_values[(*qindex) * ntargets] - scaler_min)/scaler_range;
+	*stress =  (*stress)*surro_data_range[nfeatures] + surro_data_min[nfeatures];
+	*dstress = (output_values[(*qindex) * ntargets + 1] - scaler_min)/scaler_range ;
+  *dstress = (*dstress)*surro_data_range[nfeatures+1] + surro_data_min[nfeatures+1];
 /*
 if(*qindex==0)
 {	
@@ -163,7 +174,7 @@ void surro_destroy()
 }
 
 
-
+/*
 // test 
 int main()
 {
@@ -206,26 +217,27 @@ int main()
  	vector<TF_Tensor*> output_tensors = {nullptr};	
 //	vector<TF_Tensor*> output_tensors = {tf_utils::CreateEmptyTensor(TF_FLOAT, {surro_nqpoints, ntargets}, surro_nqpoints*ntargets*sizeof(float))};	
  
- /**************** debug *******************/
+ // debug 
   cout << "input values\n";
    for(int ii=0; ii< (int)surro_input_values.size(); ii+=4)
    {
     cout << surro_input_values[ii] << " " << surro_input_values[ii+1] << " " << surro_input_values[ii+2] << " " << surro_input_values[ii+3] <<"\n ";
    }
    cout << "\n";
- /*******************************************/
+ //
  
 	tf_utils::RunSession(surro_session, surro_input_ops, input_tensors, surro_out_ops, output_tensors);
 	output_values = tf_utils::GetTensorData<float>(output_tensors[0]);
 	tf_utils::DeleteTensors(input_tensors);
 	tf_utils::DeleteTensors(output_tensors);	
  
- /*********** debug *******************/
+ // debug
   cout << "prediction\n";
   for(int i=0; i< (int) output_values.size(); i+=2)
   {
     cout << output_values[i] << " " << output_values[i+1] << "\n ";
   }
   cout << "\n";
-  /***************************************/ 
+  // 
 }
+*/

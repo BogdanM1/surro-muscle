@@ -29,7 +29,7 @@ del data_noiter_large
 scaler = MinMaxScaler(feature_range=(0,1))
 
 chunk_size=10000
-for i in itertools.chain(range(4,50), range(60,80)): 
+for i in itertools.chain(np.setdiff1d(range(1,45),range(4,45,4))): 
     indices = data['testid'].isin([i])
     scaler.partial_fit(data[indices])
 
@@ -56,4 +56,11 @@ def huber_loss(tolerance=.01):
         linear_loss = tolerance*tf.abs(error) - tolerance*tolerance*0.5 
         return tf.where(is_small_error, squared_loss, linear_loss)
     return huber
+
+# smape
+def smape(true,predicted):
+    epsilon = 0.1
+    summ = K.maximum(K.abs(true) + K.abs(predicted) + epsilon, 0.5 + epsilon)
+    err = K.abs(predicted - true) / summ * 2.0
+    return err    
 

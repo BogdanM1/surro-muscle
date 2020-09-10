@@ -10,13 +10,16 @@ import math
 import os
 from keras_self_attention import SeqSelfAttention
 from keras_radam import RAdam
+from nested_lstm import NestedLSTM 
 
 commands = open("timeSeries.py").read()
 exec(commands)
 
-num_tests = 41
+num_tests = 90
 writeDataResults  = True
 writeSimulationResults = True
+scaler_range = 1.0
+scaler_min = 0.0
 
 #model_path      = '../models/regr.sav' 
 model_path = '../models/model-gru-tcn.h5'
@@ -24,9 +27,10 @@ use_nnet = model_path.endswith('.h5')
 use_time_series  = any(t in model_path for t in ['gru','lstm','rnn','cnn','tcn'])
 model = load_model(model_path, 
                    custom_objects={
-				   'SeqSelfAttention':SeqSelfAttention,
-				   'RAdam':RAdam, 
-				   'huber':huber_loss()}) if(use_nnet) else joblib.load(model_path)
+           'NestedLSTM': NestedLSTM, 
+	   'SeqSelfAttention':SeqSelfAttention,
+	   'RAdam':RAdam, 
+           'smape':smape,'huber':huber_loss()}) if(use_nnet) else joblib.load(model_path)
 
 results_dir = '../results/'
 for file_name in os.listdir(results_dir):
@@ -61,8 +65,8 @@ def print_metrics(sig_orig, dsig_orig, sig_pred, dsig_pred):
 def drawGraphRes(x, y1, y2, name1, name2, title, testid, dotted=False):
     global results_dir
     plt.figure(figsize=(5, 4), dpi=300)
-    plt.plot(x, y1, linewidth=2.0, color='rebeccapurple', linestyle=':' if (dotted) else '-')
-    plt.plot(x, y2, linewidth=2.0, color='lightcoral', linestyle=':' if (dotted) else '--')
+    plt.plot(x, y1, linewidth=2.0, color='indigo', linestyle=':' if (dotted) else '-') #rebeccapurple
+    plt.plot(x, y2, linewidth=2.0, color='#F092DA', linestyle=':' if (dotted) else '--') #lightcoral
     plt.xlabel('Time [s]')
     plt.xlim(left=0)
     plt.ylabel(title + ' [pN/nm^2]')
@@ -93,10 +97,10 @@ def drawTestResults():
         testid = list_to_num([int(s) for s in file_name if s.isdigit()])
         if file_name.startswith('data'):
             drawGraphRes(time, sigma, sigma_pred, 'Original model', 'Surrogate model', 'Stress', testid, dotted=True)
-            drawGraphRes(time, delta_sigma, delta_sigma_pred, 'Original model', 'Surrogate model','Stress derivative', testid, dotted=True)
+            #drawGraphRes(time, delta_sigma, delta_sigma_pred, 'Original model', 'Surrogate model','Stress derivative', testid, dotted=True)
         else:
             drawGraphRes(time, sigma, sigma_pred, 'Original model', 'Surrogate model', 'Stress (simulation)', testid)
-            drawGraphRes(time, delta_sigma, delta_sigma_pred, 'Original model', 'Surrogate model', 'Stress derivative (simulation)', testid)
+            #drawGraphRes(time, delta_sigma, delta_sigma_pred, 'Original model', 'Surrogate model', 'Stress derivative (simulation)', testid)
             
 if(writeDataResults):
 	print('data')
@@ -119,7 +123,7 @@ if(writeDataResults):
 		    prediction = prediction_tmp
 		if(use_nnet):
 		    for itarg in range(0, len(target_columns)):
-		        prediction[:, itarg] = prediction[:, itarg] * scaler.data_range_[target_columns[itarg]]  + scaler.data_min_[target_columns[itarg]]
+		        prediction[:, itarg] = ((prediction[:, itarg]-scaler_min)/scaler_range) * scaler.data_range_[target_columns[itarg]]  + scaler.data_min_[target_columns[itarg]]
 		print_metrics(original_data[:,target_columns[0]], original_data[:,target_columns[1]], prediction[:, 0], prediction[:, 1])
 		df = pd.DataFrame(data = { 'time': original_data[:,0],
                                'sigma': original_data[:,target_columns[0]],

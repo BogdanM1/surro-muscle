@@ -42,3 +42,4 @@ model = load_model('../models/model-gru-tcn.h5',
 	  'RAdam':RAdam, 
 	  'huber':huber_loss()})
 print(model.predict(sample))
+

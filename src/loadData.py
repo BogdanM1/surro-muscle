@@ -5,7 +5,6 @@ from sklearn.preprocessing import MinMaxScaler
 from keras.utils.generic_utils import get_custom_objects
 from keras.layers import Activation, LeakyReLU
 from keras import optimizers
-from keras_radam import RAdam
 from keras import backend as K
 import itertools
 
@@ -58,9 +57,14 @@ def huber_loss(tolerance=.01):
     return huber
 
 # smape
-def smape(true,predicted):
-    epsilon = 0.1
-    summ = K.maximum(K.abs(true) + K.abs(predicted) + epsilon, 0.5 + epsilon)
-    err = K.abs(predicted - true) / summ * 2.0
-    return err    
-
+def smape(y_true, y_pred):
+    out = 0
+    for i in range(y_true.shape[0]):
+        a = y_true[i]
+        b = y_pred[i]
+        c = a+b
+        if c == 0:
+            continue
+        out += K.abs(a - b) / c
+    out *= (200.0 / y_true.shape[0])
+    return out

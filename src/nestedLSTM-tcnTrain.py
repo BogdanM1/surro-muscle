@@ -3,15 +3,16 @@ from keras.layers import Dense, Input, Dropout, Flatten
 from keras.models import  Model, Sequential
 from mytcn import TCN
 from numpy.random import seed
-from tensorflow import set_random_seed 
-from keras_radam import RAdam
 from nested_lstm import NestedLSTM
 import keras.initializers
 from importance_sampling.training import ImportanceTraining
+from diffgrad import DiffGrad
+import tensorflow_addons as tfa
+import tensorflow as tf
 
 _seed = 137
 seed(_seed)
-set_random_seed(_seed)
+tf.random.set_seed(_seed)
 
 commands = open("timeSeries.py").read()
 exec(commands)
@@ -49,14 +50,14 @@ glorot_uniform = keras.initializers.glorot_uniform(seed=_seed)
 
 i = Input(shape=(time_series_steps, len(time_series_feature_columns)), name='input_layer')
 o = NestedLSTM(128, depth=2, unroll=True, return_sequences=True, kernel_initializer=orthogonal, recurrent_initializer=orthogonal, recurrent_dropout=.0, name='lstm1')(i) 
-o = TCN(nb_filters=128, kernel_size=4, dilations=[1,2,4,8], activation='selu', kernel_initializer=lecun_normal, use_skip_connections=False, name='tcn1')(o) 
+o = TCN(nb_filters=128, kernel_size=4, dilations=[1,2,4], activation='selu', kernel_initializer=lecun_normal, use_skip_connections=False, name='tcn1')(o) 
 o = Flatten()(o)
 o = Dense(2, name='output_layer')(o)
 
 model = Model(inputs = [i], outputs=[o])
-model.compile(loss=smape, optimizer=RAdam(lr=1e-4, amsgrad=True))
+model.compile(loss=huber_loss(), optimizer=tfa.optimizers.RectifiedAdam(lr=1e-4,amsgrad=True))
 print(model.summary())
-history = ImportanceTraining(model).fit(X, Y, epochs = 30000, batch_size =16384, validation_data = (X_val, Y_val), verbose=2,
+history = model.fit(X, Y, epochs = 30000, batch_size =16384, validation_data = (X_val, Y_val), verbose=2,
 	            callbacks = [ModelCheckpoint(model_path, monitor = 'val_loss', save_best_only = True),
                     EarlyStopping(monitor='val_loss', restore_best_weights=True, patience=300)])
 pd.DataFrame(history.history).to_csv("../results/train-grutcn.csv")

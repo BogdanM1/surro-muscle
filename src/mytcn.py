@@ -45,12 +45,12 @@ def residual_block(x, s, i, activation, nb_filters, kernel_size, padding, kernel
         x: The previous layer in the model
         s: The stack index i.e. which stack in the overall TCN
         i: The dilation power of 2 we are using for this residual block
-        activation: The name of the type of activation to use
+        activation: The _name of the type of activation to use
         nb_filters: The number of convolutional filters to use in this block
         kernel_size: The size of the convolutional kernel
         padding: The padding used in the convolutional layers, 'same' or 'causal'.
         dropout_rate: Float between 0 and 1. Fraction of the input units to drop.
-        name: Name of the model. Useful when having multiple TCN.
+        _name: _name of the model. Useful when having multiple TCN.
     Returns:
         A tuple where the first element is the residual model layer, and the second
         is the skip connection.
@@ -102,7 +102,7 @@ class TCN(Layer):
             use_skip_connections: Boolean. If we want to add skip connections from input to each residual block.
             return_sequences: Boolean. Whether to return the last output in the output sequence, or the full sequence.
             dropout_rate: Float between 0 and 1. Fraction of the input units to drop.
-            name: Name of the model. Useful when having multiple TCN.
+            _name: _name of the model. Useful when having multiple TCN.
         Returns:
             A TCN layer.
         """
@@ -120,7 +120,7 @@ class TCN(Layer):
                  kernel_initializer='glorot_uniform',
                  name='tcn'):
         super().__init__()
-        self.name = name
+        self._name = name
         self.return_sequences = return_sequences
         self.dropout_rate = dropout_rate
         self.use_skip_connections = use_skip_connections
@@ -150,12 +150,12 @@ class TCN(Layer):
         if self.dilations is None:
             self.dilations = [1, 2, 4, 8, 16, 32]
         x = inputs
-        x = Convolution1D(self.nb_filters, 1, padding=self.padding, name=self.name + '_initial_conv', kernel_initializer=self.kernel_initializer)(x)
+        x = Convolution1D(self.nb_filters, 1, padding=self.padding, name=self._name + '_initial_conv', kernel_initializer=self.kernel_initializer)(x)
         skip_connections = []
         for s in range(self.nb_stacks):
             for i in self.dilations:
                 x, skip_out = residual_block(x, s, i, self.activation, self.nb_filters,
-                                             self.kernel_size, self.padding, self.kernel_initializer, self.dropout_rate, name=self.name)
+                                             self.kernel_size, self.padding, self.kernel_initializer, self.dropout_rate, name=self._name)
                 skip_connections.append(skip_out)
         if self.use_skip_connections:
             x = keras.layers.add(skip_connections)

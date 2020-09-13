@@ -8,8 +8,8 @@ import joblib
 from sklearn.metrics import mean_squared_error
 import math
 import os
-from keras_self_attention import SeqSelfAttention
-from keras_radam import RAdam
+from diffgrad import DiffGrad
+import tensorflow_addons as tfa
 from nested_lstm import NestedLSTM 
 
 commands = open("timeSeries.py").read()
@@ -25,13 +25,10 @@ scaler_min = 0.0
 model_path = '../models/model-gru-tcn.h5'
 use_nnet = model_path.endswith('.h5')
 use_time_series  = any(t in model_path for t in ['gru','lstm','rnn','cnn','tcn'])
-model = load_model(model_path, 
-                   custom_objects={
-           'NestedLSTM': NestedLSTM, 
-	   'SeqSelfAttention':SeqSelfAttention,
-	   'RAdam':RAdam, 
-           'smape':smape,'huber':huber_loss()}) if(use_nnet) else joblib.load(model_path)
-
+model = load_model(model_path, compile=False,
+                   custom_objects={'NestedLSTM': NestedLSTM}) if(use_nnet) else joblib.load(model_path)
+if(use_nnet):
+    model.compile(loss=huber_loss(),optimizer=tfa.optimizers.RectifiedAdam(1.e-4))
 results_dir = '../results/'
 for file_name in os.listdir(results_dir):
     if file_name.endswith('.png') or (file_name.startswith('data') and file_name.endswith('.csv')):

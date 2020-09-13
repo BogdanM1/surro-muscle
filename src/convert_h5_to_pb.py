@@ -1,7 +1,10 @@
+import tensorflow_addons as tfa
+from diffgrad import DiffGrad
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+
 import tensorflow as tf
 from keras.models import load_model
-from keras_self_attention import SeqSelfAttention
-from keras_radam import RAdam
 from nested_lstm import NestedLSTM
 
 commands = open("timeSeries.py").read()
@@ -24,22 +27,23 @@ def freeze_session(session, keep_var_names=None, output_names=None, clear_device
     """
     graph = session.graph
     with graph.as_default():
-        freeze_var_names = list(set(v.op.name for v in tf.global_variables()).difference(keep_var_names or []))
+        freeze_var_names = list(set(v.op.name for v in tf.compat.v1.global_variables()).difference(keep_var_names or []))
         output_names = output_names or []
-        output_names += [v.op.name for v in tf.global_variables()]
+        output_names += [v.op.name for v in tf.compat.v1.global_variables()]
         input_graph_def = graph.as_graph_def()
         if clear_devices:
             for node in input_graph_def.node:
                 node.device = ""
-        frozen_graph = tf.graph_util.convert_variables_to_constants(
+        frozen_graph = tf.compat.v1.graph_util.convert_variables_to_constants(
             session, input_graph_def, output_names, freeze_var_names)
         return frozen_graph
 
 model_path    = '../models/model-gru-tcn.h5'
 K.set_learning_phase(0)	
 model = load_model(model_path, custom_objects={
-    'NestedLSTM': NestedLSTM,'RAdam':RAdam,'smape':smape,
-    'SeqSelfAttention':SeqSelfAttention, 'huber':huber_loss()})	  
-frozen_graph = freeze_session(K.get_session(), output_names=[out.op.name for out in model.outputs])
+    'NestedLSTM': NestedLSTM}, compile=False)
+model.compile(loss=huber_loss(), optimizer=tfa.optimizers.RectifiedAdam(lr=1e-4))    
+model.summary()  
+frozen_graph = freeze_session(tf.compat.v1.keras.backend.get_session(), output_names=[out.op.name for out in model.outputs])
 tf.io.write_graph(frozen_graph, "../models/", "model.pb", as_text = False)
 [print(n.name) for n in frozen_graph.node]

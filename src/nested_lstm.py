@@ -8,9 +8,7 @@ from keras import regularizers
 from keras import constraints
 from keras.engine import Layer
 from keras.engine import InputSpec
-from keras.legacy import interfaces
 from keras.layers import RNN
-from keras.layers.recurrent import _generate_dropout_mask
 from keras.layers import LSTMCell, LSTM
 
 
@@ -183,20 +181,6 @@ class NestedLSTMCell(Layer):
         self.built = True
 
     def call(self, inputs, states, training=None):
-        if 0 < self.dropout < 1 and self._dropout_mask is None:
-            self._dropout_mask = _generate_dropout_mask(
-                K.ones_like(inputs),
-                self.dropout,
-                training=training,
-                count=1)
-        if (0 < self.recurrent_dropout < 1 and
-                self._nested_recurrent_masks is None):
-            _nested_recurrent_mask = _generate_dropout_mask(
-                K.ones_like(states[0]),
-                self.recurrent_dropout,
-                training=training,
-                count=self.depth)
-            self._nested_recurrent_masks = _nested_recurrent_mask
 
         # dropout matrices for input units
         dp_mask = self._dropout_mask
@@ -370,7 +354,6 @@ class NestedLSTM(RNN):
         - [Nested LSTMs](https://arxiv.org/abs/1801.10308)
     """
 
-    @interfaces.legacy_recurrent_support
     def __init__(self, units, depth,
                  activation='tanh',
                  recurrent_activation='sigmoid',

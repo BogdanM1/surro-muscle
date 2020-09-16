@@ -28,7 +28,7 @@ use_time_series  = any(t in model_path for t in ['gru','lstm','rnn','cnn','tcn']
 model = load_model(model_path, compile=False,
                    custom_objects={'NestedLSTM': NestedLSTM}) if(use_nnet) else joblib.load(model_path)
 if(use_nnet):
-    model.compile(loss=huber_loss(),optimizer=tfa.optimizers.RectifiedAdam(1.e-4))
+    model.compile(loss=smape, optimizer=DiffGrad(lr=1.e-5))
 results_dir = '../results/'
 for file_name in os.listdir(results_dir):
     if file_name.endswith('.png') or (file_name.startswith('data') and file_name.endswith('.csv')):

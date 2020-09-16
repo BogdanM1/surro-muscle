@@ -55,7 +55,7 @@ o = Flatten()(o)
 o = Dense(2, name='output_layer')(o)
 
 model = Model(inputs = [i], outputs=[o])
-model.compile(loss=huber_loss(), optimizer=tfa.optimizers.RectifiedAdam(lr=1e-4,amsgrad=True))
+model.compile(loss=smape, optimizer=DiffGrad(lr=1e-5))
 print(model.summary())
 history = model.fit(X, Y, epochs = 30000, batch_size =16384, validation_data = (X_val, Y_val), verbose=2,
 	            callbacks = [ModelCheckpoint(model_path, monitor = 'val_loss', save_best_only = True),

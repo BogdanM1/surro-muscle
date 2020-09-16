@@ -8,6 +8,9 @@ from keras import optimizers
 from keras import backend as K
 import itertools
 
+from tensorflow.python.framework import ops
+from tensorflow.python.ops import math_ops
+
 K.set_floatx('float32')
 
 feature_columns = [1, 2, 3, 4, 5, 6]
@@ -57,14 +60,8 @@ def huber_loss(tolerance=.01):
     return huber
 
 # smape
-def smape(y_true, y_pred):
-    out = 0
-    for i in range(y_true.shape[0]):
-        a = y_true[i]
-        b = y_pred[i]
-        c = a+b
-        if c == 0:
-            continue
-        out += K.abs(a - b) / c
-    out *= (200.0 / y_true.shape[0])
-    return out
+def smape(y_true, y_pred): 
+    epsilon = .1
+    summ = K.maximum(K.abs(y_true) + K.abs(y_pred) + epsilon, 0.5 + epsilon)
+    smape = K.abs(y_true - y_pred) / summ
+    return smape

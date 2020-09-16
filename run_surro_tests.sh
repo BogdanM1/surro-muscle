@@ -1,5 +1,6 @@
 #!/bin/bash
 cd surro-muscle/src/
+cp min_max.txt $HOME/boxieMexie/mexie_exe/FEMSolver/build/min_max.txt
 if [ $# == 0 ] 
 then 
 	python3 convert_h5_to_pb.py

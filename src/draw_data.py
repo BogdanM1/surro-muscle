@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
-commands = open("loadData.py").read()
+commands = open("initialize.py").read()
 exec(commands)
 num_tests = 90
 results_dir = '../results/'

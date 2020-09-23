@@ -12,7 +12,7 @@ from diffgrad import DiffGrad
 import tensorflow_addons as tfa
 from nested_lstm import NestedLSTM 
 
-commands = open("timeSeries.py").read()
+commands = open("initialize.py").read()
 exec(commands)
 
 num_tests = 90
@@ -22,13 +22,13 @@ scaler_range = 1.0
 scaler_min = 0.0
 
 #model_path      = '../models/regr.sav' 
-model_path = '../models/model-gru-tcn.h5'
+model_path = '../models/model.h5'
 use_nnet = model_path.endswith('.h5')
-use_time_series  = any(t in model_path for t in ['gru','lstm','rnn','cnn','tcn'])
+use_time_series  = True
 model = load_model(model_path, compile=False,
                    custom_objects={'NestedLSTM': NestedLSTM}) if(use_nnet) else joblib.load(model_path)
 if(use_nnet):
-    model.compile(loss=smape, optimizer=DiffGrad(lr=1.e-5))
+    model.compile(loss=loss, optimizer=optimizer)
 results_dir = '../results/'
 for file_name in os.listdir(results_dir):
     if file_name.endswith('.png') or (file_name.startswith('data') and file_name.endswith('.csv')):

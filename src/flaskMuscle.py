@@ -11,7 +11,7 @@ from keras_radam import RAdam
 
 app = Flask(__name__)
 
-commands = open("timeSeries.py").read()
+commands = open("initialize.py").read()
 exec(commands)
 simulation_data = {}
 models = {}

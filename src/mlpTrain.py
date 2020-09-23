@@ -2,13 +2,14 @@ from keras.callbacks import ModelCheckpoint
 from keras.layers import Dense, Dropout, LeakyReLU
 from keras.models import  Sequential
 from numpy.random import seed
-from tensorflow import set_random_seed 
 
-seed(1)
-set_random_seed(2)
-
-commands = open("loadData.py").read()
+commands = open("initialize.py").read()
 exec(commands)
+model_path    = '../models/model.h5'
+
+_seed = 137
+seed(_seed)
+tf.random.set_seed(_seed)
 
 model_path    = '../models/model-mlp.h5'
 training_data = data_scaled[data['testid'].isin(range(1,6,1))]
@@ -27,7 +28,7 @@ model.add(Dropout(0.1))
 model.add(Dense(2, activation='sigmoid'))
 model.add(Dropout(0.1))
 model.add(Dense(2))
-model.compile(loss='mse', optimizer='adam')
+model.compile(loss=loss, optimizer=optimizer)
 
 history = model.fit(X, Y, epochs = 5, batch_size = 64, validation_data=(X_val, Y_val),
                     callbacks=[ModelCheckpoint(model_path, save_best_only=True)])

@@ -3,17 +3,15 @@ from keras.layers import Dense, Input, Dropout, Flatten, GRU
 from keras.models import  Model, Sequential
 from mytcn import TCN
 from numpy.random import seed
-from tensorflow import set_random_seed 
-from keras_radam import RAdam
 import keras.initializers
+
+commands = open("initialize.py").read()
+exec(commands)
+model_path    = '../models/model.h5'
 
 _seed = 137
 seed(_seed)
-set_random_seed(_seed)
-
-commands = open("timeSeries.py").read()
-exec(commands)
-model_path    = '../models/model-gru-tcn.h5'
+tf.random.set_seed(_seed)
 
 X = []
 Y = []
@@ -53,7 +51,7 @@ o = Flatten()(o)
 o = Dense(2, name='output_layer') (o)
 
 model = Model(inputs = [i], outputs=[o])
-model.compile(loss=huber_loss(), optimizer=RAdam(learning_rate=1e-4, amsgrad=True))
+model.compile(loss=loss, optimizer=optimizer)
 print(model.summary())
 history = model.fit(X, Y, epochs = 30000, batch_size = 16384, validation_data = (X_val, Y_val), verbose=2,
 	            callbacks = [ModelCheckpoint(model_path, monitor = 'val_loss', save_best_only = True),

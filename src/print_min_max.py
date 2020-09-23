@@ -1,4 +1,4 @@
-commands = open("timeSeries.py").read()
+commands = open("initialize.py").read()
 exec(commands)
 from pandas.core.common import flatten
 

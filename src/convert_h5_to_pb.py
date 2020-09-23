@@ -7,7 +7,7 @@ import tensorflow as tf
 from keras.models import load_model
 from nested_lstm import NestedLSTM
 
-commands = open("timeSeries.py").read()
+commands = open("initialize.py").read()
 exec(commands)
 
 def freeze_session(session, keep_var_names=None, output_names=None, clear_devices=True):
@@ -38,11 +38,11 @@ def freeze_session(session, keep_var_names=None, output_names=None, clear_device
             session, input_graph_def, output_names, freeze_var_names)
         return frozen_graph
 
-model_path    = '../models/model-gru-tcn.h5'
+model_path    = '../models/model.h5'
 K.set_learning_phase(0)	
 model = load_model(model_path, custom_objects={
     'NestedLSTM': NestedLSTM}, compile=False)
-model.compile(loss=smape, optimizer=DiffGrad(lr=1e-5))    
+model.compile(loss=loss, optimizer=optimizer)    
 model.summary()  
 frozen_graph = freeze_session(tf.compat.v1.keras.backend.get_session(), output_names=[out.op.name for out in model.outputs])
 tf.io.write_graph(frozen_graph, "../models/", "model.pb", as_text = False)

@@ -32,13 +32,10 @@ from keras.models import load_model
 from keras_self_attention import SeqSelfAttention
 from keras_radam import RAdam
 from keras_layer_normalization import LayerNormalization
-commands = open("timeSeries.py").read()
+commands = open("initialize.py").read()
 exec(commands)
  
 model = load_model('../models/model-gru-tcn.h5', 
 	  custom_objects={
-	  'LayerNormalization':LayerNormalization,
-	  'SeqSelfAttention':SeqSelfAttention, 
-	  'RAdam':RAdam, 
 	  'huber':huber_loss()})
 print(model.predict(sample))

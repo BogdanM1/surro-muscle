@@ -3,7 +3,7 @@ import joblib
 from sklearn.utils import shuffle
 import numpy as np
 
-commands = open("loadData.py").read()
+commands = open("initialize.py").read()
 exec(commands)
 
 model_path    = '../models/regr.sav'

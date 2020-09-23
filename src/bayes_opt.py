@@ -11,47 +11,50 @@ from skopt.plots import plot_convergence, plot_evaluations, plot_objective
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.layers import Dense, Input, Dropout, Flatten, GRU
 from keras.models import  Model, Sequential
-from keras_radam import RAdam
 import keras.initializers
 from mytcn import TCN
 from nested_lstm import NestedLSTM
 from numpy.random import seed
 import tensorflow
-from tensorflow import set_random_seed 
+import math
+
+commands = open("initialize.py").read()
+exec(commands)
 
 _seed = 137
 seed(_seed)
-set_random_seed(_seed)
-
-commands = open("timeSeries.py").read()
-exec(commands)
+tf.random.set_seed(_seed)
 
 
-dim_learning_rate = Real(low= 1e-7, high=1e-3, prior='log-uniform', name='learning_rate')
-dim_epsilon = Real(low= 1e-10, high=1e-3, prior='log-uniform', name='epsilon')
 
-dimensions = [dim_learning_rate, dim_epsilon]
-default_parameters = [1e-5, 1e-6]
+dim_lstm_neurons = Integer(low= 16, high=128, name='lstm_neurons')
+dim_tcn_neurons = Integer(low= 16, high=128, name='tcn_neurons')
+dim_tcn_dilations = Categorical(categories =[ 4, 8, 16, 32], name='tcn_dilations') 
+dimensions = [dim_lstm_neurons, dim_tcn_neurons, dim_tcn_dilations]
+default_parameters = [128, 128, 4]
 
-def create_model(learning_rate, epsilon):
+def create_model(lstm_neurons, tcn_neurons, tcn_dilations):
   lecun_normal = keras.initializers.lecun_normal(seed=_seed)
   orthogonal = keras.initializers.Orthogonal(seed=_seed)
   glorot_uniform = keras.initializers.glorot_uniform(seed=_seed)
   
+  max_dilation_degree = int(math.log(tcn_dilations*2,2))
+  dilations_list = [2**i for i in range(0, max_dilation_degree)]
+  
   i = Input(shape=(time_series_steps, len(time_series_feature_columns)), name='input_layer')
-  o = GRU(128, return_sequences=True, kernel_initializer=orthogonal, recurrent_initializer=orthogonal, name='gru_layer1')(i) 
-  o = TCN(nb_filters=64, kernel_size=4, dilations=[1,2,4], activation='selu', kernel_initializer=lecun_normal, use_skip_connections=False, name='tcn_layer1')(o) 
+  o = NestedLSTM(int(lstm_neurons), depth=2,return_sequences=True, kernel_initializer=orthogonal, recurrent_initializer=orthogonal, name='lstm1')(i) 
+  o = TCN(nb_filters=int(tcn_neurons), kernel_size=4, dilations=dilations_list, activation='selu', kernel_initializer=lecun_normal, use_skip_connections=False, name='tcn1')(o) 
   o = Flatten()(o)
-  o = Dense(2, name='output_layer') (o)
-
+  o = Dense(2, name='output_layer')(o)
+  
   model = Model(inputs = [i], outputs=[o])
-  model.compile(loss=huber_loss(), optimizer=RAdam(learning_rate=learning_rate, epsilon=epsilon, amsgrad=True))
+  model.compile(loss=loss, optimizer=optimizer)
 
   return model 
   
 X = []
 Y = []
-for i in itertools.chain(np.setdiff1d(range(1,50),range(4,50,4))): 
+for i in itertools.chain(np.setdiff1d(range(1,45),range(4,45,4))): 
     indices = data['testid'].isin([i])
     for x in InputToTimeSeries(data_scaled[indices][:,time_series_feature_columns], np.array(data.loc[indices,'converged'])):
         X.append(x)
@@ -64,7 +67,7 @@ Y = np.array(Y)
 
 X_val = []
 Y_val = []
-for i in itertools.chain(range(4,50,4)): 
+for i in itertools.chain(range(4,45,4)): 
     indices = data_noiter['testid'].isin([i])
     for x in InputToTimeSeries(data_scaled_noiter[indices][:, time_series_feature_columns]):
         X_val.append(x)
@@ -76,30 +79,30 @@ X_val = np.array(X_val)
 Y_val = np.array(Y_val)
 
 @use_named_args(dimensions=dimensions)  
-def fitness(learning_rate, epsilon):
-    model = create_model(learning_rate, epsilon)
-    history = model.fit(X, Y, epochs=5, batch_size=4096, validation_data=(X_val, Y_val), verbose=2)
+def fitness(lstm_neurons, tcn_neurons, tcn_dilations):
+    model = create_model(lstm_neurons, tcn_neurons, tcn_dilations)
+    history = model.fit(X, Y, epochs=5, batch_size=16384, validation_data=(X_val, Y_val), verbose=2)
     fit_val = history.history['val_loss'][-1]
 
     print()
-    print(learning_rate, epsilon)
+    print(lstm_neurons, tcn_neurons, tcn_dilations)
     print("fitness value: {0:.10}".format(fit_val))
 
     del model
     K.clear_session()
-    tensorflow.reset_default_graph()
+    tf.compat.v1.reset_default_graph()  
 
     return fit_val
     
 K.clear_session()
-tensorflow.reset_default_graph()    
+tf.compat.v1.reset_default_graph()    
 gp_result = gp_minimize(func=fitness, dimensions=dimensions, n_calls=50, noise=1e-10, n_jobs=-1, kappa = 1.96, 
         acq_func='EI', acq_optimizer='auto',
         verbose=True, x0=default_parameters)
 print('gp optimization result')
 print(gp_result)
 print('gp best params:')
-print(gp_result.x[0],gp_result.x[1])
+print(gp_result.x[0],gp_result.x[1],gp_result.x[2])
 
 
 fig = plt.figure()

@@ -4,17 +4,15 @@ from keras.layers.normalization import BatchNormalization
 from keras.models import  Model, Sequential
 from mytcn import TCN
 from numpy.random import seed
-from tensorflow import set_random_seed 
-from keras_radam import RAdam
 from keras_self_attention import SeqSelfAttention
 
-seed(1)
-set_random_seed(2)
-
-commands = open("timeSeries.py").read()
+commands = open("initialize.py").read()
 exec(commands)
+model_path    = '../models/model.h5'
 
-model_path    = '../models/model-tcn.h5'
+_seed = 137
+seed(_seed)
+tf.random.set_seed(_seed)
 
 X = []
 Y = []
@@ -45,7 +43,7 @@ o = Flatten()(o)
 o = Dense(2) (o)
 
 model = Model(inputs = [i], outputs=[o])
-model.compile(loss=huber_loss(), optimizer=RAdam())
+model.compile(loss=loss, optimizer=optimizer)
 history = model.fit(X, Y, epochs = 3000, batch_size = 1024, validation_data=(X_val, Y_val),
                     callbacks=[ModelCheckpoint(model_path, monitor='val_loss', save_best_only=True)])
 pd.DataFrame(history.history).to_csv("../results/train-tcn.csv")

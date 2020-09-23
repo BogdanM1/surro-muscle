@@ -7,9 +7,6 @@ using std::vector;
 #define nfeatures 4
 #define ntargets 2
 #define ntimesteps 11
-
-#define scaler_range 1.0
-#define scaler_min (0.0) 
  
 int surro_fem_execution_phase; // 0 - init , 1 - first iteration of the first step, 2 - any other 
 int surro_nqpoints; 
@@ -69,9 +66,7 @@ void surro_set_values(int * qindex, double* stretch, double* activation, int *fs
 	int vec_index = (*qindex)*ntimesteps*nfeatures + (ntimesteps - 1)*nfeatures;
   // if(*qindex==0) printf("act, stretch: %.19lf %.19lf\n", *activation, *stretch);
 	surro_input_values[vec_index] = (*activation - surro_data_min[0])/(surro_data_range[0]);
-	surro_input_values[vec_index] = surro_input_values[vec_index] * scaler_range + scaler_min;
 	surro_input_values[vec_index + 1] = (*stretch - surro_data_min[1])/( surro_data_range[1] );	
-  surro_input_values[vec_index + 1] = surro_input_values[vec_index + 1] * scaler_range + scaler_min;
   // if(*qindex==0) printf("act, stretch scaled: %.19lf %.19lf\n", surro_input_values[vec_index], surro_input_values[vec_index+1]);
 	// vector is filled-in for the first time: previous time steps are set to be the same as current step
 	if(*fstStepfstIter == 1)
@@ -106,16 +101,12 @@ void surro_converged()
     dstress = output_values[iqpoint * ntargets + 1];
     
     // scale 
-    stress = (stress - scaler_min) / scaler_range;
     stress = stress*surro_data_range[nfeatures] + surro_data_min[nfeatures];
-    dstress = (dstress - scaler_min) / scaler_range;
 	  dstress = dstress*surro_data_range[nfeatures+1] + surro_data_min[nfeatures+1];
 
-	// descale  
+	  // descale  
     stress = (stress - surro_data_min[nfeatures-2])/surro_data_range[nfeatures-2];
-    stress = stress * scaler_range + scaler_min;  
-    dstress = (dstress - surro_data_min[nfeatures-1])/surro_data_range[nfeatures-1];
-    dstress = dstress * scaler_range + scaler_min; 
+    dstress = (dstress - surro_data_min[nfeatures-1])/surro_data_range[nfeatures-1]; 
         
 		surro_input_values[vec_index + 2] = stress;
 		surro_input_values[vec_index + 3] = dstress;	    
@@ -151,17 +142,17 @@ void surro_predict()
 
 void surro_get_values(int *qindex, double * stress, double * dstress)
 {
-  *stress = (output_values[(*qindex) * ntargets] - scaler_min)/scaler_range;
+  *stress = output_values[(*qindex) * ntargets];
 	*stress =  (*stress)*surro_data_range[nfeatures] + surro_data_min[nfeatures];
-	*dstress = (output_values[(*qindex) * ntargets + 1] - scaler_min)/scaler_range ;
+	*dstress = output_values[(*qindex) * ntargets + 1];
   *dstress = (*dstress)*surro_data_range[nfeatures+1] + surro_data_min[nfeatures+1];
-/*
+/**
 if(*qindex==0)
 {	
    printf ("sig/dsig scaled: %.19lf %.19lf\n", output_values[(*qindex) * ntargets], output_values[(*qindex) * ntargets + 1]);
    printf("sig/dsig: %.19lf %.19lf\n", *stress, *dstress);
 }
-*/
+/**/
 }
 
 void surro_destroy()

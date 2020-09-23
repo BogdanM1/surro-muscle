@@ -10,7 +10,7 @@ from keras_self_attention import SeqSelfAttention
 from keras_radam import RAdam
 
 app = Flask(__name__)
-commands = open("timeSeries.py").read()
+commands = open("initialize.py").read()
 exec(commands)
 #
 f=open('result.csv','w')

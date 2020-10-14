@@ -44,9 +44,9 @@ orthogonal = keras.initializers.Orthogonal(seed=_seed)
 glorot_uniform = keras.initializers.glorot_uniform(seed=_seed)
 
 i = Input(shape=(time_series_steps, len(time_series_feature_columns)), name='input_layer')
-o = GRU(128, return_sequences=True, kernel_initializer=orthogonal, recurrent_initializer=orthogonal, recurrent_dropout=.0, name='gru_layer1')(i) 
-#o = Dropout(.2)(o)
-o = TCN(nb_filters=64, kernel_size=4, dilations=[1,2,4], activation='selu', kernel_initializer=lecun_normal, use_skip_connections=False, name='tcn_layer1')(o) 
+o = GRU(128, return_sequences=True, kernel_initializer=orthogonal, recurrent_initializer=orthogonal, name='gru1')(i) 
+o = Dropout(.2)(o)
+o = TCN(nb_filters=128, kernel_size=4, dilations=[1,2,4,8], activation='selu', kernel_initializer=lecun_normal, use_skip_connections=False, name='tcn1')(o) 
 o = Flatten()(o)
 o = Dense(2, name='output_layer') (o)
 

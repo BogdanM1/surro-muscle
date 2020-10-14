@@ -90,5 +90,5 @@ def smape(y_true, y_pred):
     return smape
 
 # define optimizer and loss 
-optimizer=DiffGrad(lr=1e-5)
+optimizer=DiffGrad(lr=1e-6)
 loss=huber_loss()

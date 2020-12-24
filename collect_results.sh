@@ -1,4 +1,4 @@
-for i in {1..90}
+for i in {1..85}
 do
 cp ${i}/FEMSolver/build/surroHuxley.csv  $HOME/surro-muscle/results/surroHuxley${i}.csv
 #cp ${i}/FEMSolver/build/postHUXLEYFI.csv  $HOME/surro-muscle/data/tests/test${i}.csv

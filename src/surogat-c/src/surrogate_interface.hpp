@@ -3,7 +3,7 @@
 #include <iostream>
 #include <vector>
 
-void surro_init(int* n_qpoints, char* model_path="/home/bogdan/surro-muscle/models/model.pb", char* min_max_file="min_max.txt");
+void surro_init(int* n_qpoints, char* model_path="/home/bogdan/surro-muscle/models/model.pb", char* conf_file="surro_conf.txt");
 void surro_set_values(int * qindex, double* stretch, double* activation, int* fstStepfstIter=0);
 void surro_converged();
 void surro_predict();

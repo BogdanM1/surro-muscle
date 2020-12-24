@@ -15,11 +15,9 @@ from nested_lstm import NestedLSTM
 commands = open("initialize.py").read()
 exec(commands)
 
-num_tests = 90
+num_tests = 85
 writeDataResults  = True
 writeSimulationResults = True
-scaler_range = 1.0
-scaler_min = 0.0
 
 #model_path      = '../models/regr.sav' 
 model_path = '../models/model.h5'
@@ -59,16 +57,16 @@ def print_metrics(sig_orig, dsig_orig, sig_pred, dsig_pred):
 		print(str(rmse_sig)+','+str(rmse_dsig)+','+str(max_sig)+','+str(max_dsig)+','+str(min_sig)+','+str(min_dsig)
     +','+str(rse_sig)+','+str(rse_dsig)+','+str(corr_sig)+','+str(corr_dsig))
 
-def drawGraphRes(x, y1, y2, name1, name2, title, testid, dotted=False):
+def drawGraphRes(x, y1, y2, name1, name2, title, testid, dotted=True):
     global results_dir
     plt.figure(figsize=(5, 4), dpi=300)
     plt.plot(x, y1, linewidth=2.0, color='indigo', linestyle=':' if (dotted) else '-') #rebeccapurple
     plt.plot(x, y2, linewidth=2.0, color='#F092DA', linestyle=':' if (dotted) else '--') #lightcoral
-    plt.xlabel('Time [s]')
+    plt.xlabel('Time $[s]$')
     plt.xlim(left=0)
-    plt.ylabel(title + ' [pN/nm^2]')
+    plt.ylabel(title + ' $[pN/nm^2]$')
     plt.ylim(bottom=0, top=1.2*plt.ylim()[1])
-    plt.title('Test ' + str(testid) + ' - ' + title, loc = 'left')
+    plt.title('Example ' + str(testid) + ' - ' + title, loc = 'left')
     plt.legend([name1, name2], loc='upper left', frameon=False)
     plt.tight_layout()
     plt.savefig(results_dir + title + str(testid) + '.png')
@@ -93,7 +91,7 @@ def drawTestResults():
         delta_sigma_pred = np.array(data['delta_sigma pred'])
         testid = list_to_num([int(s) for s in file_name if s.isdigit()])
         if file_name.startswith('data'):
-            drawGraphRes(time, sigma, sigma_pred, 'Original model', 'Surrogate model', 'Stress', testid, dotted=True)
+            drawGraphRes(time, sigma, sigma_pred, 'Original model', 'Surrogate model', 'Stress', testid)
             #drawGraphRes(time, delta_sigma, delta_sigma_pred, 'Original model', 'Surrogate model','Stress derivative', testid, dotted=True)
         else:
             drawGraphRes(time, sigma, sigma_pred, 'Original model', 'Surrogate model', 'Stress (simulation)', testid)
@@ -120,7 +118,7 @@ if(writeDataResults):
 		    prediction = prediction_tmp
 		if(use_nnet):
 		    for itarg in range(0, len(target_columns)):
-		        prediction[:, itarg] = ((prediction[:, itarg]-scaler_min)/scaler_range) * scaler.data_range_[target_columns[itarg]]  + scaler.data_min_[target_columns[itarg]]
+		        prediction[:, itarg] = ((prediction[:, itarg] - scale_min)/scale_range) * scaler.data_range_[target_columns[itarg]]  + scaler.data_min_[target_columns[itarg]]
 		print_metrics(original_data[:,target_columns[0]], original_data[:,target_columns[1]], prediction[:, 0], prediction[:, 1])
 		df = pd.DataFrame(data = { 'time': original_data[:,0],
                                'sigma': original_data[:,target_columns[0]],

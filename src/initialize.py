@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import tensorflow as tf
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, RobustScaler
 from keras.utils.generic_utils import get_custom_objects
 from keras.layers import Activation, LeakyReLU
 from keras import optimizers
@@ -12,6 +12,7 @@ from diffgrad import DiffGrad
 import tensorflow_addons as tfa
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import math_ops
+from general import jonbarron_lossfun 
 
 K.set_floatx('float32')
 
@@ -41,20 +42,15 @@ def InputToTimeSeries(data, converged = None):
 
 data = pd.read_csv("../data/dataMexie.csv")
 data_noiter = pd.read_csv("../data/dataMexieNoIter.csv")
-'''
-data_large  = pd.read_csv("../data/dataMexieLargeModel.csv")
-data_noiter_large = pd.read_csv("../data/dataMexieLargeModelNoIter.csv")
 
-data = data.append(data_large)
-data_noiter = data_noiter.append(data_noiter_large) 
-del data_large
-del data_noiter_large
-'''
+scale_min = 0.0
+scale_max = 10.0
+scale_range = scale_max - scale_min
+scaler = MinMaxScaler(feature_range=(scale_min,scale_max)) 
+chunk_size = 10000
+ntrain = 49
 
-scaler = MinMaxScaler(feature_range=(0,1))
-
-chunk_size=10000
-for i in itertools.chain(np.setdiff1d(range(1,45),range(4,45,4))): 
+for i in itertools.chain(np.setdiff1d(range(1,ntrain),range(4,ntrain,4))): 
     indices = data['testid'].isin([i])
     scaler.partial_fit(data[indices])
 
@@ -82,13 +78,17 @@ def huber_loss(tolerance=.01):
         return tf.where(is_small_error, squared_loss, linear_loss)
     return huber
 
-# smape
-def smape(y_true, y_pred): 
+# smape diff
+def smape_diff(y_true, y_pred): 
     epsilon = .1
     summ = K.maximum(K.abs(y_true) + K.abs(y_pred) + epsilon, 0.5 + epsilon)
     smape = K.abs(y_true - y_pred) / summ
-    return smape
-
+    return smape    
+    
+# jonbarron loss
+def jonbarron_loss(y_true, y_pred): 
+    return jonbarron_lossfun((y_pred-y_true), 1.0, .001)
+        
 # define optimizer and loss 
 optimizer=DiffGrad(lr=1e-6)
-loss=huber_loss()
+loss=jonbarron_loss

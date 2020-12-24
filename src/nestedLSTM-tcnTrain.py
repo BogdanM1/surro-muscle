@@ -15,7 +15,7 @@ tf.random.set_seed(_seed)
 
 X = []
 Y = []
-for i in itertools.chain(np.setdiff1d(range(1,80),range(4,45,4))): 
+for i in itertools.chain(np.setdiff1d(range(1,ntrain),range(4,ntrain,4))): 
     indices = data['testid'].isin([i])
     for x in InputToTimeSeries(data_scaled[indices][:,time_series_feature_columns], np.array(data.loc[indices,'converged'])):
         X.append(x)
@@ -28,7 +28,7 @@ Y = np.array(Y)
 
 X_val = []
 Y_val = []
-for i in itertools.chain(range(4,45,4)): 
+for i in itertools.chain(range(4,ntrain,4)): 
     indices = data_noiter['testid'].isin([i])
     for x in InputToTimeSeries(data_scaled_noiter[indices][:, time_series_feature_columns]):
         X_val.append(x)
@@ -44,8 +44,7 @@ orthogonal = keras.initializers.Orthogonal(seed=_seed)
 glorot_uniform = keras.initializers.glorot_uniform(seed=_seed)
 
 i = Input(shape=(time_series_steps, len(time_series_feature_columns)), name='input_layer')
-o = NestedLSTM(128, depth=4, return_sequences=True, activation='selu', kernel_initializer=lecun_normal, recurrent_initializer=orthogonal,recurrent_activation='sigmoid', recurrent_dropout=.2, name='lstm1')(i) 
-o = Dropout(.2)(o)
+o = NestedLSTM(128, depth=4, return_sequences=True, activation='selu', kernel_initializer=lecun_normal, recurrent_initializer=orthogonal,recurrent_activation='sigmoid', recurrent_dropout=.0, name='lstm1')(i) 
 o = TCN(nb_filters=128, kernel_size=4, dilations=[1,2,4], activation='selu', kernel_initializer=lecun_normal, use_skip_connections=False, name='tcn1')(o) 
 o = Flatten()(o)
 o = Dense(2, name='output_layer')(o)
@@ -53,10 +52,10 @@ o = Dense(2, name='output_layer')(o)
 model = Model(inputs = [i], outputs=[o])
 model.compile(loss=loss, optimizer=optimizer)
 print(model.summary())
-history = model.fit(X, Y, epochs = 30000, batch_size = 16384, validation_data = (X_val, Y_val), verbose=2,
+
+history = model.fit(X, Y, epochs = 50000, batch_size = 16384, validation_data = (X_val, Y_val), verbose=2, 
 	            callbacks = [ModelCheckpoint(model_path, monitor = 'val_loss', save_best_only = True),
                     EarlyStopping(monitor='val_loss', restore_best_weights=True, patience=300)])
 pd.DataFrame(history.history).to_csv("../results/train-grutcn.csv")
-
 
 

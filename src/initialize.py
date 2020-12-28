@@ -48,9 +48,10 @@ scale_max = 10.0
 scale_range = scale_max - scale_min
 scaler = MinMaxScaler(feature_range=(scale_min,scale_max)) 
 chunk_size = 10000
-ntrain = 49
+ntrains = 1
+ntraine = 75
 
-for i in itertools.chain(np.setdiff1d(range(1,ntrain),range(4,ntrain,4))): 
+for i in itertools.chain(np.setdiff1d(range(ntrains,ntraine),range(ntrains+3,ntraine,4))): 
     indices = data['testid'].isin([i])
     scaler.partial_fit(data[indices])
 
@@ -87,7 +88,7 @@ def smape_diff(y_true, y_pred):
     
 # jonbarron loss
 def jonbarron_loss(y_true, y_pred): 
-    return jonbarron_lossfun((y_pred-y_true), 1.0, .001)
+    return jonbarron_lossfun((y_pred-y_true), 1.0, .01)
         
 # define optimizer and loss 
 optimizer=DiffGrad(lr=1e-6)

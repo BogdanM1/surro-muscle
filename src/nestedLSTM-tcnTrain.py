@@ -15,7 +15,7 @@ tf.random.set_seed(_seed)
 
 X = []
 Y = []
-for i in itertools.chain(np.setdiff1d(range(1,ntrain),range(4,ntrain,4))): 
+for i in itertools.chain(np.setdiff1d(range(ntrains,ntraine),range(ntrains+3,ntraine,4))): 
     indices = data['testid'].isin([i])
     for x in InputToTimeSeries(data_scaled[indices][:,time_series_feature_columns], np.array(data.loc[indices,'converged'])):
         X.append(x)
@@ -28,7 +28,7 @@ Y = np.array(Y)
 
 X_val = []
 Y_val = []
-for i in itertools.chain(range(4,ntrain,4)): 
+for i in itertools.chain(range(ntrains+3,ntraine,4)): 
     indices = data_noiter['testid'].isin([i])
     for x in InputToTimeSeries(data_scaled_noiter[indices][:, time_series_feature_columns]):
         X_val.append(x)

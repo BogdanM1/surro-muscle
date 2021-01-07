@@ -13,6 +13,12 @@ _seed = 137
 seed(_seed)
 tf.random.set_seed(_seed)
 
+from adaptive import AdaptiveLossFunction
+adaptive = AdaptiveLossFunction(2,tf.float32)    
+def adaptive_jonbarron_loss(y_true, y_pred): 
+   return adaptive.__call__((y_pred-y_true))
+loss = adaptive_jonbarron_loss
+
 X = []
 Y = []
 for i in itertools.chain(np.setdiff1d(range(ntrains,ntraine),range(ntrains+3,ntraine,4))): 
@@ -39,6 +45,20 @@ for i in itertools.chain(range(ntrains+3,ntraine,4)):
 X_val = np.array(X_val)
 Y_val = np.array(Y_val)
 
+# balance set
+nsamples = len(Y)
+values = [sample[0] for sample in Y]
+sample_weight = np.ones(nsamples)
+for isample in range(2,nsamples):
+  if(2*values[isample] < values[isample-1] and 10*values[isample] > values[isample-1]):
+      sample_weight[isample] *= 1000
+      #ytile = np.tile(Y[isample],(2000,1))
+      #xtile = np.tile(X[isample],(2000,1,1))
+      #Y = np.append(Y,ytile, axis=0)
+      #X = np.append(X,xtile, axis=0)
+#np.savetxt("sw.csv",sample_weight, delimiter=",")       
+##############
+
 lecun_normal = keras.initializers.lecun_normal(seed=_seed)
 orthogonal = keras.initializers.Orthogonal(seed=_seed)
 glorot_uniform = keras.initializers.glorot_uniform(seed=_seed)
@@ -53,7 +73,7 @@ model = Model(inputs = [i], outputs=[o])
 model.compile(loss=loss, optimizer=optimizer)
 print(model.summary())
 
-history = model.fit(X, Y, epochs = 50000, batch_size = 16384, validation_data = (X_val, Y_val), verbose=2, 
+history = model.fit(X, Y, epochs = 50000, batch_size = 16384, validation_data = (X_val, Y_val), verbose=2, #sample_weight=sample_weight,
 	            callbacks = [ModelCheckpoint(model_path, monitor = 'val_loss', save_best_only = True),
                     EarlyStopping(monitor='val_loss', restore_best_weights=True, patience=300)])
 pd.DataFrame(history.history).to_csv("../results/train-grutcn.csv")

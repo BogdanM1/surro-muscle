@@ -12,7 +12,7 @@ from diffgrad import DiffGrad
 import tensorflow_addons as tfa
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import math_ops
-from general import jonbarron_lossfun 
+from general import lossfun 
 
 K.set_floatx('float32')
 
@@ -49,7 +49,7 @@ scale_range = scale_max - scale_min
 scaler = MinMaxScaler(feature_range=(scale_min,scale_max)) 
 chunk_size = 10000
 ntrains = 1
-ntraine = 75
+ntraine = 45
 
 for i in itertools.chain(np.setdiff1d(range(ntrains,ntraine),range(ntrains+3,ntraine,4))): 
     indices = data['testid'].isin([i])
@@ -88,8 +88,8 @@ def smape_diff(y_true, y_pred):
     
 # jonbarron loss
 def jonbarron_loss(y_true, y_pred): 
-    return jonbarron_lossfun((y_pred-y_true), 1.0, .01)
+    return lossfun((y_pred-y_true), 1.0, .01)  
         
 # define optimizer and loss 
 optimizer=DiffGrad(lr=1e-6)
-loss=jonbarron_loss
+loss = jonbarron_loss

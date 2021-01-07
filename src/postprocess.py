@@ -15,7 +15,7 @@ from nested_lstm import NestedLSTM
 commands = open("initialize.py").read()
 exec(commands)
 
-num_tests = 85
+num_tests = 65
 writeDataResults  = True
 writeSimulationResults = True
 
@@ -60,8 +60,12 @@ def print_metrics(sig_orig, dsig_orig, sig_pred, dsig_pred):
 def drawGraphRes(x, y1, y2, name1, name2, title, testid, dotted=True):
     global results_dir
     plt.figure(figsize=(5, 4), dpi=300)
-    plt.plot(x, y1, linewidth=2.0, color='indigo', linestyle=':' if (dotted) else '-') #rebeccapurple
-    plt.plot(x, y2, linewidth=2.0, color='#F092DA', linestyle=':' if (dotted) else '--') #lightcoral
+    if(dotted):
+      plt.plot(x, y1, marker='o', markersize=1, color='indigo', linestyle='None') 
+      plt.plot(x, y2,  marker='o', markersize=1,  color='#F092DA', linestyle='None')      
+    else: 
+      plt.plot(x, y1, linewidth=2.0, color='indigo', linestyle='-')   
+      plt.plot(x, y2, linewidth=2.0, color='#F092DA', linestyle='--') 
     plt.xlabel('Time $[s]$')
     plt.xlim(left=0)
     plt.ylabel(title + ' $[pN/nm^2]$')
@@ -137,7 +141,8 @@ if(writeSimulationResults):
 	        original_data = np.array(data_noiter)[indices, :]
 	        prediction = pd.read_csv(results_dir + "surroHuxley"+str(i+1)+".csv", sep='\s*,\s*', engine='python')
 	        prediction = np.array(prediction.loc[::4, ['sigma','delta_sigma']])
-        	print_metrics(original_data[:,target_columns[0]], original_data[:,target_columns[1]], prediction[:, 0], prediction[:, 1])
+	        original_data = original_data[:len(prediction),]
+	        print_metrics(original_data[:,target_columns[0]], original_data[:,target_columns[1]], prediction[:, 0], prediction[:, 1])
         	df = pd.DataFrame(data = { 'time': original_data[:,0],
                                      'sigma': original_data[:,target_columns[0]],
                                      'delta_sigma': original_data[:,target_columns[1]],
@@ -148,6 +153,8 @@ if(writeSimulationResults):
 	        print("Error during processing test No. " + str(i+1))
 
 drawTestResults()
+'''
 for file_name in os.listdir(results_dir):
     if(file_name.endswith('.csv')):
         os.unlink(results_dir + file_name)
+'''

@@ -15,7 +15,7 @@ from nested_lstm import NestedLSTM
 commands = open("initialize.py").read()
 exec(commands)
 
-num_tests = 65
+num_tests = 85
 writeDataResults  = True
 writeSimulationResults = True
 
@@ -153,8 +153,6 @@ if(writeSimulationResults):
 	        print("Error during processing test No. " + str(i+1))
 
 drawTestResults()
-'''
 for file_name in os.listdir(results_dir):
     if(file_name.endswith('.csv')):
         os.unlink(results_dir + file_name)
-'''

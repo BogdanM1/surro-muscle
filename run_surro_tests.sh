@@ -3,12 +3,6 @@ cd surro-muscle/src/
 python3 print_surro_conf.py
 cp surro_conf.txt $HOME/boxieMexie/mexie_exe/FEMSolver/build/surro_conf.txt
 rm ../results/*
-if [ $# == 0 ] 
-then 
-        rm ../models/*.pb
-	python3 convert_h5_to_pb.py
-fi
-
 cd $HOME/boxieMexie
 rm -rf [1-9]*
 ./run_tests.sh

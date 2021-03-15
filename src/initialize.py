@@ -14,34 +14,17 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import math_ops
 from general import lossfun 
 
-K.set_floatx('float32')
 
+K.set_floatx('float32')
+gpus = tf.config.experimental.list_physical_devices('GPU')
+for gpu in gpus:
+  tf.config.experimental.set_memory_growth(gpu, True)
+  
 feature_columns = [1, 2, 3, 4, 5, 6]
 target_columns  = [7, 8]
 
 time_series_steps = 11
 time_series_feature_columns = np.array([2, 4, 5, 6]) 
-
-def InputToTimeSeries(data, converged = None):
-  data_count = len(data)
-  nfeatures = len(data[0])
-  outdata   = np.empty([data_count, time_series_steps, nfeatures])
-
-  for i in range(0, time_series_steps):
-    outdata[0, i, :] = data[0, :]
-
-  for i in range(1, data_count):
-    if(converged is None or converged[i-1]):
-      for j in range(0, time_series_steps - 1):
-        outdata[i, j, :] = outdata[i-1, j+1, :]
-    else:
-      for j in range(0, time_series_steps - 1):
-        outdata[i, j, :] = outdata[i-1, j, :]
-    outdata[i, time_series_steps-1, :] = data[i, :]
-  return (outdata)
-
-data = pd.read_csv("../data/dataMexie.csv")
-data_noiter = pd.read_csv("../data/dataMexieNoIter.csv")
 
 scale_min = 0.0
 scale_max = 10.0
@@ -49,7 +32,11 @@ scale_range = scale_max - scale_min
 scaler = MinMaxScaler(feature_range=(scale_min,scale_max)) 
 chunk_size = 10000
 ntrains = 1
-ntraine = 45
+ntraine = 65
+
+
+data = pd.read_csv("../data/dataMexie.csv")
+data_noiter = pd.read_csv("../data/dataMexieNoIter.csv")
 
 for i in itertools.chain(np.setdiff1d(range(ntrains,ntraine),range(ntrains+3,ntraine,4))): 
     indices = data['testid'].isin([i])
@@ -68,28 +55,53 @@ for start in range(0, data_noiter.shape[0], chunk_size):
       data_scaled_noiter = scaler.transform(df_subset)
   else:
       data_scaled_noiter = np.append(data_scaled_noiter, scaler.transform(df_subset), axis=0)  
+      
 
-# huber 
-def huber_loss(tolerance=.01):
-    def huber(y,y_pred):
-        error = y - y_pred
-        is_small_error = tf.abs(error) < tolerance
-        squared_loss = tf.square(error) / 2 
-        linear_loss = tolerance*tf.abs(error) - tolerance*tolerance*0.5 
-        return tf.where(is_small_error, squared_loss, linear_loss)
-    return huber
+##################################################
+init_act = (scale_range*(0.0-scaler.data_min_[time_series_feature_columns[0]]))/scaler.data_range_[time_series_feature_columns[0]] + scale_min
+init_stretch = (scale_range*(1.0-scaler.data_min_[time_series_feature_columns[1]]))/scaler.data_range_[time_series_feature_columns[1]] + scale_min
+init_in_stress = (scale_range*(0.0-scaler.data_min_[time_series_feature_columns[2]]))/scaler.data_range_[time_series_feature_columns[2]] + scale_min
+init_in_dstress = (scale_range*(0.0-scaler.data_min_[time_series_feature_columns[3]]))/scaler.data_range_[time_series_feature_columns[3]] + scale_min
 
-# smape diff
-def smape_diff(y_true, y_pred): 
-    epsilon = .1
-    summ = K.maximum(K.abs(y_true) + K.abs(y_pred) + epsilon, 0.5 + epsilon)
-    smape = K.abs(y_true - y_pred) / summ
-    return smape    
+init_out_stress = (scale_range*(0.0-scaler.data_min_[target_columns[0]]))/scaler.data_range_[target_columns[0]] + scale_min
+init_out_dstress = (scale_range*(0.0-scaler.data_min_[target_columns[1]]))/scaler.data_range_[target_columns[1]] + scale_min
+
+def InputToTimeSeries(data, converged = None):
+  data_count = len(data)
+  nfeatures = len(data[0])
+  outdata   = np.empty([data_count, time_series_steps, nfeatures])
+
+  if(nfeatures==4):
+    for i in range(0, time_series_steps-1):
+      outdata[0, i, :] = np.array([init_act, init_stretch, init_in_stress, init_in_dstress])    
+  else:
+    for i in range(0, time_series_steps-1):
+      outdata[0, i, :] = np.array([init_out_stress, init_out_dstress])
+    
+  outdata[0, time_series_steps-1, :] =  data[0, :]
+
+  for i in range(1, data_count):
+    if(converged is None or converged[i-1]):
+      for j in range(0, time_series_steps - 1):
+        outdata[i, j, :] = outdata[i-1, j+1, :]
+    else:
+      for j in range(0, time_series_steps - 1):
+        outdata[i, j, :] = outdata[i-1, j, :]
+    outdata[i, time_series_steps-1, :] = data[i, :]
+  return (outdata)
+###################################################   
     
 # jonbarron loss
 def jonbarron_loss(y_true, y_pred): 
-    return lossfun((y_pred-y_true), 1.0, .01)  
+    return lossfun(K.abs(y_pred-y_true), 1.0, .001)  
+    
+# jonbarron loss time differencing
+def time_diff_jonbarron_loss(y_true, y_pred):
+    y_true_curr = y_true[:,:2]
+    y_true_prev = y_true[:,-2:]
+    y_true_diff = K.abs(y_true_curr - y_true_prev) + 1e-10
+    return y_true_diff*1e+4*lossfun(K.abs(y_pred - y_true_curr), 1.0, 1e-3)    
         
 # define optimizer and loss 
 optimizer=DiffGrad(lr=1e-6)
-loss = jonbarron_loss
+loss = time_diff_jonbarron_loss

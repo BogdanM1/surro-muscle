@@ -21,7 +21,7 @@ vector<float> output_values;
 
 double* surro_data_min;  
 double* surro_data_range; 
-double surro_scale_min, surro_scale_range;
+double surro_scale_min, surro_scale_range, stress_diff_scale;
 double init_stretch_value, init_act_value, init_stress_value, init_dstress_value; 
 
 void surro_init(int* n_qpoints, char* model_path, char* conf_file)
@@ -29,7 +29,7 @@ void surro_init(int* n_qpoints, char* model_path, char* conf_file)
   char line[MAX_LINE_LENGTH];
   FILE*conf_stream = fopen(conf_file, "r");
   fgets(line, MAX_LINE_LENGTH, conf_stream); 
-  fscanf(conf_stream, "%d%d%d%lf%lf\n", &nfeatures, &ntargets, &ntimesteps, &surro_scale_min, &surro_scale_range);
+  fscanf(conf_stream, "%d%d%d%lf%lf%lf\n", &nfeatures, &ntargets, &ntimesteps, &surro_scale_min, &surro_scale_range, &stress_diff_scale);
   surro_data_min = (double*)malloc(sizeof(double)*(nfeatures + ntargets));
   surro_data_range = (double*)malloc(sizeof(double)*(nfeatures + ntargets));
   fgets(line, MAX_LINE_LENGTH, conf_stream); 
@@ -115,8 +115,9 @@ void surro_converged()
 			}
 		// set appropriate stress values for the last time step 
 		vec_index = iqpoint*ntimesteps*nfeatures + (ntimesteps - 1)*nfeatures;
-    stress = output_values[iqpoint * ntargets];
-    dstress = output_values[iqpoint * ntargets + 1];
+    
+    stress = output_values[iqpoint * ntargets]/stress_diff_scale + surro_input_values[vec_index + 2];
+    dstress = output_values[iqpoint * ntargets + 1]/stress_diff_scale + surro_input_values[vec_index + 3]; 
     
     // descale 
     stress = ((stress-surro_scale_min)/surro_scale_range ) *surro_data_range[nfeatures] + surro_data_min[nfeatures];
@@ -163,9 +164,14 @@ void surro_predict()
 
 void surro_get_values(int *qindex, double * stress, double * dstress)
 {
-  *stress = (output_values[(*qindex) * ntargets] - surro_scale_min)/surro_scale_range;
+  int vec_index = (*qindex)*ntimesteps*nfeatures + (ntimesteps - 1)*nfeatures;
+  
+  *stress = output_values[(*qindex) * ntargets]/stress_diff_scale + surro_input_values[vec_index + 2]; // increment
+  *stress = ((*stress) - surro_scale_min)/surro_scale_range;
 	*stress =  (*stress)*surro_data_range[nfeatures] + surro_data_min[nfeatures];
-	*dstress = (output_values[(*qindex) * ntargets + 1] - surro_scale_min)/surro_scale_range;
+ 
+  *dstress = output_values[(*qindex) * ntargets + 1]/stress_diff_scale + surro_input_values[vec_index + 3]; // increment
+	*dstress = (*dstress - surro_scale_min)/surro_scale_range;
   *dstress = (*dstress)*surro_data_range[nfeatures+1] + surro_data_min[nfeatures+1];
   
    // Bogdan:stampa

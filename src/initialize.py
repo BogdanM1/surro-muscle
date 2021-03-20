@@ -26,6 +26,7 @@ target_columns  = [7, 8]
 time_series_steps = 11
 time_series_feature_columns = np.array([2, 4, 5, 6]) 
 
+stress_diff_scale = 1.0
 scale_min = 0.0
 scale_max = 10.0
 scale_range = scale_max - scale_min

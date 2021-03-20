@@ -122,6 +122,8 @@ if(writeDataResults):
 		    prediction = prediction_tmp
 		if(use_nnet):
 		    for itarg in range(0, len(target_columns)):
+		        prediction[:, itarg] /= stress_diff_scale
+		        prediction[:, itarg] += np.array(data_scaled_noiter)[indices, target_columns[itarg]] #increment
 		        prediction[:, itarg] = ((prediction[:, itarg] - scale_min)/scale_range) * scaler.data_range_[target_columns[itarg]]  + scaler.data_min_[target_columns[itarg]]
 		print_metrics(original_data[:,target_columns[0]], original_data[:,target_columns[1]], prediction[:, 0], prediction[:, 1])
 		df = pd.DataFrame(data = { 'time': original_data[:,0],

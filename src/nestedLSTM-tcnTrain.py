@@ -19,14 +19,8 @@ adaptive = AdaptiveLossFunction(2,tf.float32,scale_lo=1e-10,scale_init=1e-4)
  
 def adaptive_jonbarron_loss(y_true, y_pred): 
    return adaptive.__call__(K.abs(y_pred-y_true))
-   
-def adaptive_jonbarron_loss_td(y_true, y_pred): 
-    y_true_curr = y_true[:,:2]
-    y_true_prev = y_true[:,-2:]
-    y_true_diff = K.abs(y_true_curr - y_true_prev) + 1e-10
-    return y_true_diff*1e+4*adaptive.__call__(K.abs(y_pred - y_true_curr))
 
-loss = adaptive_jonbarron_loss_td
+loss = adaptive_jonbarron_loss
 
 
 X = []
@@ -58,12 +52,15 @@ values_prev_val = [sample[-1][-2:] for sample in X_val]
 
 X = np.array(X)
 Y = np.array(Y)         
-Y = np.append(Y, values_prev, axis = 1)
-
+#Y = np.append(Y, values_prev, axis = 1)
+Y -= np.array(values_prev)
+Y *= stress_diff_scale
 
 X_val = np.array(X_val)
 Y_val = np.array(Y_val)
-Y_val = np.append(Y_val, values_prev_val, axis = 1)
+#Y_val = np.append(Y_val, values_prev_val, axis = 1)
+Y_val -= np.array(values_prev_val)
+Y_val *= stress_diff_scale
 
 lecun_normal = keras.initializers.lecun_normal(seed=_seed)
 orthogonal = keras.initializers.Orthogonal(seed=_seed)

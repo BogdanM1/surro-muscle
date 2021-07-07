@@ -14,7 +14,6 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import math_ops
 from general import lossfun 
 
-
 K.set_floatx('float32')
 gpus = tf.config.experimental.list_physical_devices('GPU')
 for gpu in gpus:
@@ -26,18 +25,23 @@ target_columns  = [7, 8]
 time_series_steps = 11
 time_series_feature_columns = np.array([2, 4, 5, 6]) 
 
-stress_diff_scale = 1.0
+stress_scale = 40.0
 scale_min = 0.0
 scale_max = 10.0
 scale_range = scale_max - scale_min
 scaler = MinMaxScaler(feature_range=(scale_min,scale_max)) 
 chunk_size = 10000
 ntrains = 1
-ntraine = 65
+ntraine = 100
 
 
 data = pd.read_csv("../data/dataMexie.csv")
 data_noiter = pd.read_csv("../data/dataMexieNoIter.csv")
+# strain instead of stretch 
+data.iloc[:,3] -= 1.0
+data.iloc[:,4] -= 1.0
+data_noiter.iloc[:,3] -= 1.0
+data_noiter.iloc[:,4] -= 1.0
 
 for i in itertools.chain(np.setdiff1d(range(ntrains,ntraine),range(ntrains+3,ntraine,4))): 
     indices = data['testid'].isin([i])
@@ -57,10 +61,10 @@ for start in range(0, data_noiter.shape[0], chunk_size):
   else:
       data_scaled_noiter = np.append(data_scaled_noiter, scaler.transform(df_subset), axis=0)  
       
-
-##################################################
+	  
+# Input to time series
 init_act = (scale_range*(0.0-scaler.data_min_[time_series_feature_columns[0]]))/scaler.data_range_[time_series_feature_columns[0]] + scale_min
-init_stretch = (scale_range*(1.0-scaler.data_min_[time_series_feature_columns[1]]))/scaler.data_range_[time_series_feature_columns[1]] + scale_min
+init_strain = (scale_range*(0.0-scaler.data_min_[time_series_feature_columns[1]]))/scaler.data_range_[time_series_feature_columns[1]] + scale_min
 init_in_stress = (scale_range*(0.0-scaler.data_min_[time_series_feature_columns[2]]))/scaler.data_range_[time_series_feature_columns[2]] + scale_min
 init_in_dstress = (scale_range*(0.0-scaler.data_min_[time_series_feature_columns[3]]))/scaler.data_range_[time_series_feature_columns[3]] + scale_min
 
@@ -74,7 +78,7 @@ def InputToTimeSeries(data, converged = None):
 
   if(nfeatures==4):
     for i in range(0, time_series_steps-1):
-      outdata[0, i, :] = np.array([init_act, init_stretch, init_in_stress, init_in_dstress])    
+      outdata[0, i, :] = np.array([init_act, init_strain, init_in_stress, init_in_dstress])    
   else:
     for i in range(0, time_series_steps-1):
       outdata[0, i, :] = np.array([init_out_stress, init_out_dstress])
@@ -90,19 +94,10 @@ def InputToTimeSeries(data, converged = None):
         outdata[i, j, :] = outdata[i-1, j, :]
     outdata[i, time_series_steps-1, :] = data[i, :]
   return (outdata)
-###################################################   
     
 # jonbarron loss
 def jonbarron_loss(y_true, y_pred): 
-    return lossfun(K.abs(y_pred-y_true), 1.0, .001)  
-    
-# jonbarron loss time differencing
-def time_diff_jonbarron_loss(y_true, y_pred):
-    y_true_curr = y_true[:,:2]
-    y_true_prev = y_true[:,-2:]
-    y_true_diff = K.abs(y_true_curr - y_true_prev) + 1e-10
-    return y_true_diff*1e+4*lossfun(K.abs(y_pred - y_true_curr), 1.0, 1e-3)    
+    return lossfun(K.abs(y_pred-y_true), 1.0, 1e-5)
         
-# define optimizer and loss 
-optimizer=DiffGrad(lr=1e-6)
-loss = time_diff_jonbarron_loss
+optimizer=tfa.optimizers.RectifiedAdam(lr=1e-3, beta_1=0.99, beta_2=0.9999, clipnorm=1e-4)
+loss = tf.keras.losses.Huber(45e-7)

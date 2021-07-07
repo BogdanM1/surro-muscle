@@ -15,7 +15,7 @@ from nested_lstm import NestedLSTM
 commands = open("initialize.py").read()
 exec(commands)
 
-num_tests = 85
+num_tests = 105
 writeDataResults  = True
 writeSimulationResults = True
 
@@ -25,6 +25,12 @@ use_nnet = model_path.endswith('.h5')
 use_time_series  = True
 model = load_model(model_path, compile=False,
                    custom_objects={'NestedLSTM': NestedLSTM}) if(use_nnet) else joblib.load(model_path)
+    
+use_huber_regr = False
+if(use_huber_regr):                   
+  huberModelSig = joblib.load('../models/huberSigma.sav')
+  huberModelDSig = joblib.load('../models/huberDSig.sav')
+                   
 if(use_nnet):
     model.compile(loss=loss, optimizer=optimizer)
 results_dir = '../results/'
@@ -96,10 +102,10 @@ def drawTestResults():
         testid = list_to_num([int(s) for s in file_name if s.isdigit()])
         if file_name.startswith('data'):
             drawGraphRes(time, sigma, sigma_pred, 'Original model', 'Surrogate model', 'Stress', testid)
-            #drawGraphRes(time, delta_sigma, delta_sigma_pred, 'Original model', 'Surrogate model','Stress derivative', testid, dotted=True)
+            drawGraphRes(time, delta_sigma, delta_sigma_pred, 'Original model', 'Surrogate model','Stress derivative', testid, dotted=True)
         else:
             drawGraphRes(time, sigma, sigma_pred, 'Original model', 'Surrogate model', 'Stress (simulation)', testid)
-            #drawGraphRes(time, delta_sigma, delta_sigma_pred, 'Original model', 'Surrogate model', 'Stress derivative (simulation)', testid)
+            drawGraphRes(time, delta_sigma, delta_sigma_pred, 'Original model', 'Surrogate model', 'Stress derivative (simulation)', testid)
             
 if(writeDataResults):
 	print('data')
@@ -114,6 +120,11 @@ if(writeDataResults):
 		else:
 		    pred_data = pred_data[:, feature_columns]
 		    prediction_tmp = model.predict(pred_data)
+		    if(use_huber_regr):        
+		      prediction_tmp[:,0] = huberModelSig.predict(pred_data)
+		      prediction_tmp[:,1] = huberModelDSig.predict(pred_data)
+		      prediction_tmp[:,0] = pred_data.dot(huberModelSig.coef_) + huberModelSig.intercept_
+		      prediction_tmp[:,1] = pred_data.dot(huberModelDSig.coef_) + huberModelDSig.intercept_
 		if(len(prediction_tmp.shape) == 3):
 		    prediction = np.zeros((prediction_tmp.shape[0], prediction_tmp.shape[2]))
 		    for itarg in range(0, len(target_columns)):
@@ -122,8 +133,8 @@ if(writeDataResults):
 		    prediction = prediction_tmp
 		if(use_nnet):
 		    for itarg in range(0, len(target_columns)):
-		        prediction[:, itarg] /= stress_diff_scale
-		        prediction[:, itarg] += np.array(data_scaled_noiter)[indices, target_columns[itarg]] #increment
+		        prediction[:, itarg] /= stress_scale         
+		        prediction[:, itarg] += np.array(data_scaled_noiter)[indices, (target_columns[itarg]-2)] #increment
 		        prediction[:, itarg] = ((prediction[:, itarg] - scale_min)/scale_range) * scaler.data_range_[target_columns[itarg]]  + scaler.data_min_[target_columns[itarg]]
 		print_metrics(original_data[:,target_columns[0]], original_data[:,target_columns[1]], prediction[:, 0], prediction[:, 1])
 		df = pd.DataFrame(data = { 'time': original_data[:,0],
@@ -155,6 +166,8 @@ if(writeSimulationResults):
 	        print("Error during processing test No. " + str(i+1))
 
 drawTestResults()
+'''
 for file_name in os.listdir(results_dir):
     if(file_name.endswith('.csv')):
         os.unlink(results_dir + file_name)
+'''

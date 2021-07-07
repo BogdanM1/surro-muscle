@@ -15,12 +15,10 @@ seed(_seed)
 tf.random.set_seed(_seed)
 
 from adaptive import AdaptiveLossFunction
-adaptive = AdaptiveLossFunction(2,tf.float32,scale_lo=1e-10,scale_init=1e-4)   
- 
+adaptive = AdaptiveLossFunction(2,tf.float32,scale_lo=1e-10,scale_init=1e-3, alpha_init=1.0, alpha_lo=1e-10, alpha_hi=2.0)   
 def adaptive_jonbarron_loss(y_true, y_pred): 
    return adaptive.__call__(K.abs(y_pred-y_true))
-
-loss = adaptive_jonbarron_loss
+#loss = adaptive_jonbarron_loss
 
 
 X = []
@@ -52,15 +50,15 @@ values_prev_val = [sample[-1][-2:] for sample in X_val]
 
 X = np.array(X)
 Y = np.array(Y)         
-#Y = np.append(Y, values_prev, axis = 1)
 Y -= np.array(values_prev)
-Y *= stress_diff_scale
+Y *= stress_scale
+
 
 X_val = np.array(X_val)
 Y_val = np.array(Y_val)
-#Y_val = np.append(Y_val, values_prev_val, axis = 1)
 Y_val -= np.array(values_prev_val)
-Y_val *= stress_diff_scale
+Y_val *= stress_scale
+
 
 lecun_normal = keras.initializers.lecun_normal(seed=_seed)
 orthogonal = keras.initializers.Orthogonal(seed=_seed)
@@ -77,9 +75,10 @@ model.compile(loss=loss, optimizer=optimizer)
 print(model.summary())
 
 
-history = model.fit(X, Y, epochs = 50000, batch_size = 16384, validation_data = (X_val, Y_val), verbose=2, 
-	            callbacks = [ModelCheckpoint(model_path, monitor = 'val_loss', save_best_only = True),
-                    EarlyStopping(monitor='val_loss', restore_best_weights=True, patience=300)])
-pd.DataFrame(history.history).to_csv("../results/train-grutcn.csv")
+tensorboard = tf.keras.callbacks.TensorBoard(log_dir="../logs", histogram_freq=1, write_graph=True, write_images=False, update_freq="epoch", profile_batch=2, embeddings_freq=0)   
+modelcheckpoint = ModelCheckpoint(model_path, monitor = 'val_loss', save_best_only = True)
+earlystopping = EarlyStopping(monitor='val_loss', restore_best_weights=True, patience=500)
+
+model.fit(X, Y, epochs = 50000, batch_size = 16384, validation_data = (X_val, Y_val), verbose=2, callbacks = [tensorboard, modelcheckpoint, earlystopping])
 
 

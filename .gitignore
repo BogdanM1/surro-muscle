@@ -5,4 +5,4 @@ src/__pycache*
 data/tests/testLarge*
 data/dataMexieLarge*
 results/*
-
+logs/*

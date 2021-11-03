@@ -24,7 +24,8 @@ for i in range(num_examples):
         f.write(f'2\n0.0 {round(force, 4)}\n{sim_length} {round(force, 4)}')
 
     f.close()
-    os.mkdir('QR/Example'+str(i+1))
+    os.makedirs('QR/Example'+str(i+1))
+    copy2('Pak.dat', os.path.join('Force', str(i+1)))
     copy2('protocol.dat', os.path.join('QR', 'Example'+str(i+1)))
     copy2('input_force.dat', os.path.join('QR', 'Example'+str(i+1)))
     copy2('input_displacement.dat', os.path.join('QR', 'Example'+str(i+1)))

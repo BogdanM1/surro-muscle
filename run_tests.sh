@@ -1,4 +1,4 @@
-for i in {1..85}
+for (( i=$1; i<=$2; i++ ))
 do
   rm -rf ${i}
   cp -r mexie_exe/ ${i}
@@ -21,8 +21,8 @@ do
     cp mexie_exe/shared/FEM_MMCa.cfg $i/shared/FEM_MM.cfg
   fi 
   
-  # tests with ca and displacements
-  if [ $i -ge 66 ] && [ $i -le 85 ]
+  # tests with ca and displacements/force
+  if [ $i -ge 66 ] && [ $i -le 165 ]
   then
     cp mexie_exe/shared/FEM_MMCa.cfg $i/shared/FEM_MM.cfg   
   fi 

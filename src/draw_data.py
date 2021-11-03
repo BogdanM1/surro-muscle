@@ -6,7 +6,7 @@ import numpy as np
 
 commands = open("initialize.py").read()
 exec(commands)
-num_tests = 85
+num_tests = 45
 results_dir = '../results/'
 ca_dir = '../../boxieMexie/mexie_exe/FEMSolver/build/tests/'
 
@@ -22,6 +22,9 @@ def drawGraph(x, y, name, unit, testid):
     plt.tight_layout()
     plt.savefig(results_dir + name + str(testid) + '.png')
     plt.close()
+    x = np.array(x).flatten()
+    y = np.array(y).flatten()
+    np.savetxt(results_dir + '/Example ' + str(testid) + name + '.csv', np.column_stack((x, y)), delimiter=',', header= 'time,' + name, comments="")
 
 def drawTestData(data):
     for i in range(1, num_tests + 1):
@@ -37,7 +40,7 @@ def drawTestData(data):
         drawGraph(time, stretch, 'Stretch', '',i)
         #drawGraph(time, sigma, 'Sigma', '$[pN/nm^2]$',i)
         #drawGraph(time, delta_sigma, 'Delta sigma', '$[pN/nm^2]$',i)
-'''        
+#'''       
 drawTestData(data_noiter)    
 for i in range(1, num_tests + 1):
   filepath = ca_dir + str(i) + '/Pak.dat'
@@ -57,8 +60,8 @@ for i in range(1, num_tests + 1):
     ca.append(res[1])
   fp.close()
   drawGraph(time, ca, 'Ca', '$[\mu M]$',i)
-'''  
-  
+#'''  
+''' 
 plt.figure(figsize=(5, 4), dpi=300)
 plt.hist([x for x in data_scaled[:,7] if x >= 1e-1], bins=100, histtype='stepfilled', alpha=0.3, ec='k', color='rebeccapurple')
 plt.savefig(results_dir + 'hist_scaled_full.png')
@@ -79,3 +82,18 @@ plt.hist([x for x in data_noiter['sigma'] if x >= 1e-1], bins=100, histtype='ste
 plt.savefig(results_dir + 'hist_no_iter.png')
 plt.close() 
 
+plt.figure(figsize=(5, 4), dpi=300)
+indices       = data.index[data['testid'].isin(range(1,105,1))].tolist()
+diff = data_scaled[indices,7]-data_scaled[indices,5]
+plt.scatter(data_scaled[indices,5],np.where(diff>-.5, diff*30, diff*3))
+plt.savefig(results_dir + 'fig1.png')
+plt.close() 
+
+
+plt.figure(figsize=(5, 4), dpi=300)
+indices       = data.index[data['testid'].isin(range(1,105,1))].tolist()
+diff = data_scaled[indices,8]-data_scaled[indices,6]
+plt.scatter(data_scaled[indices,6],np.where(diff>-.5, diff*30, diff*3))
+plt.savefig(results_dir + 'fig2.png')
+plt.close() 
+'''

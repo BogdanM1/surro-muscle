@@ -23,7 +23,7 @@ data <- cbind(time, data)
 data$testid <- 1
 dataFull <- data
 
-for (i in c(2:85))
+for (i in c(2:165))
 { 
   data <- read.csv(sprintf("../data/tests/test%d.csv",i))
   data <- removeGaussPoint(data)

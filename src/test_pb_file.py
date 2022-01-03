@@ -34,6 +34,5 @@ commands = open("initialize.py").read()
 exec(commands)
  
 model = load_model('../models/model.h5', 
-	  custom_objects={'NestedLSTM':NestedLSTM,'DiffGrad':DiffGrad,
-	  'huber':huber_loss()})
+	  custom_objects={'NestedLSTM':NestedLSTM})
 print(model.predict(sample))

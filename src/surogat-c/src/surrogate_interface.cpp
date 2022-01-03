@@ -23,7 +23,7 @@ double stress_scale;
 double* surro_data_min;  
 double* surro_data_range; 
 double surro_scale_min, surro_scale_range;
-double init_strain_value, init_act_value, init_stress_value, init_dstress_value; 
+double init_stretch_value, init_act_value, init_stress_value, init_dstress_value; 
 
 void surro_init(int* n_qpoints, char* model_path, char* conf_file)
 {
@@ -48,7 +48,7 @@ void surro_init(int* n_qpoints, char* model_path, char* conf_file)
 	surro_input_values.resize(surro_nqpoints*ntimesteps*nfeatures);
   
   init_act_value = surro_scale_range*(0.0 - surro_data_min[0])/surro_data_range[0] + surro_scale_min;
-  init_strain_value = surro_scale_range*(0.0 - surro_data_min[1])/surro_data_range[1] + surro_scale_min;
+  init_stretch_value = surro_scale_range*(1.0 - surro_data_min[1])/surro_data_range[1] + surro_scale_min;
   init_stress_value = surro_scale_range*(0.0 - surro_data_min[2])/surro_data_range[2] + surro_scale_min;
   init_dstress_value = surro_scale_range*(0.0 - surro_data_min[3])/surro_data_range[3] + surro_scale_min;
 	
@@ -80,7 +80,7 @@ void surro_set_values(int * qindex, double* stretch, double* activation, int *fs
 	int vec_index = (*qindex)*ntimesteps*nfeatures + (ntimesteps - 1)*nfeatures;
 
   surro_input_values[vec_index] = surro_scale_range*(*activation - surro_data_min[0])/(surro_data_range[0]) + surro_scale_min;
-	surro_input_values[vec_index + 1] = surro_scale_range*((*stretch-1) - surro_data_min[1])/( surro_data_range[1] ) + surro_scale_min;	
+	surro_input_values[vec_index + 1] = surro_scale_range*(*stretch - surro_data_min[1])/( surro_data_range[1] ) + surro_scale_min;	
  
   // vector is filled-in for the first time: previous time steps are set to be the same as current step
 	if(*fstStepfstIter == 1)
@@ -93,7 +93,7 @@ void surro_set_values(int * qindex, double* stretch, double* activation, int *fs
 		{
 			tmp_vec_index = (*qindex)*ntimesteps*nfeatures + istep*nfeatures;
 			surro_input_values[tmp_vec_index] = init_act_value; 
-      surro_input_values[tmp_vec_index + 1] = init_strain_value;
+      surro_input_values[tmp_vec_index + 1] = init_stretch_value;
       surro_input_values[tmp_vec_index + 2] = init_stress_value;
       surro_input_values[tmp_vec_index + 3] = init_dstress_value;
 		}

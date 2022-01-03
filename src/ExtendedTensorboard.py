@@ -13,8 +13,8 @@ class ExtendedTensorBoard(tf.keras.callbacks.TensorBoard):
   def _log_gradients(self, epoch):
     with writer_tf.as_default(), tf.GradientTape() as g:
       # here we use data to calculate the gradients
-      _x_batch = tf.convert_to_tensor(X[:1000])
-      _y_batch = tf.convert_to_tensor(Y[:1000])
+      _x_batch = tf.convert_to_tensor(X[:10000])
+      _y_batch = tf.convert_to_tensor(Y[:10000])
 
       g.watch(_x_batch)
       _y_pred = self.model(_x_batch)  # forward-propagation

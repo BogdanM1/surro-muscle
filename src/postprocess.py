@@ -8,14 +8,13 @@ import joblib
 from sklearn.metrics import mean_squared_error
 import math
 import os
-from diffgrad import DiffGrad
 import tensorflow_addons as tfa
 from nested_lstm import NestedLSTM 
 
 commands = open("initialize.py").read()
 exec(commands)
 
-num_tests = 105
+num_tests = 165
 writeDataResults  = True
 writeSimulationResults = True
 

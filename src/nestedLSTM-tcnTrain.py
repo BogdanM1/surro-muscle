@@ -14,13 +14,6 @@ _seed = 137
 seed(_seed)
 tf.random.set_seed(_seed)
 
-from adaptive import AdaptiveLossFunction
-adaptive = AdaptiveLossFunction(2,tf.float32,scale_lo=1e-10,scale_init=1e-3, alpha_init=1.0, alpha_lo=1e-10, alpha_hi=2.0)   
-def adaptive_jonbarron_loss(y_true, y_pred): 
-   return adaptive.__call__(K.abs(y_pred-y_true))
-#loss = adaptive_jonbarron_loss
-
-
 X = []
 Y = []
 for i in itertools.chain(np.setdiff1d(range(ntrains,ntraine),range(ntrains+3,ntraine,4))):  
@@ -75,7 +68,10 @@ model.compile(loss=loss, optimizer=optimizer)
 print(model.summary())
 
 
-tensorboard = tf.keras.callbacks.TensorBoard(log_dir="../logs", histogram_freq=1, write_graph=True, write_images=False, update_freq="epoch", profile_batch=2, embeddings_freq=0)   
+
+commands = open("ExtendedTensorboard.py").read()
+exec(commands)
+tensorboard = ExtendedTensorBoard(log_dir=log_dir, histogram_freq=1,write_graph=True,write_images=False,update_freq="epoch", profile_batch=2, embeddings_freq=0)  
 modelcheckpoint = ModelCheckpoint(model_path, monitor = 'val_loss', save_best_only = True)
 earlystopping = EarlyStopping(monitor='val_loss', restore_best_weights=True, patience=500)
 

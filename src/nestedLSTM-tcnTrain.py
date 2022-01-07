@@ -1,5 +1,9 @@
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
+<<<<<<< HEAD
 from keras.layers import Dense, Input, Dropout, Flatten, Bidirectional
+=======
+from keras.layers import Dense, Input, Dropout, Flatten, GRU
+>>>>>>> ffc647349d466eea01eb25c825a8c0f3e1fd9083
 from keras.models import  Model, Sequential
 from mytcn import TCN
 from numpy.random import seed
@@ -58,8 +62,17 @@ orthogonal = keras.initializers.Orthogonal(seed=_seed)
 glorot_uniform = keras.initializers.glorot_uniform(seed=_seed)
 
 i = Input(shape=(time_series_steps, len(time_series_feature_columns)), name='input_layer')
+<<<<<<< HEAD
 o = NestedLSTM(128, depth=6, return_sequences=True, activation='selu', kernel_initializer=lecun_normal, recurrent_initializer=orthogonal, name='lstm1')(i) 
 o = TCN(nb_filters=128, kernel_size=4, dilations=[1,2,4], activation='selu', kernel_initializer=lecun_normal, use_skip_connections=False, name='tcn1')(o) 
+=======
+o = GRU(128, return_sequences=True, activation='selu', kernel_initializer=lecun_normal, recurrent_initializer=orthogonal, name='gru1')(i) 
+o = GRU(256, return_sequences=True, activation='selu', kernel_initializer=lecun_normal, recurrent_initializer=orthogonal, name='gru2')(o) 
+o = GRU(256, return_sequences=True, activation='selu', kernel_initializer=lecun_normal, recurrent_initializer=orthogonal, name='gru3')(o) 
+o = GRU(128, return_sequences=True, activation='selu', kernel_initializer=lecun_normal, recurrent_initializer=orthogonal, name='gru4')(o) 
+o = GRU(128, return_sequences=True, activation='selu', kernel_initializer=lecun_normal, recurrent_initializer=orthogonal, name='gru5')(o) 
+#o = TCN(nb_filters=192, kernel_size=4, dilations=[1,2,4,8,16], activation='selu', kernel_initializer=lecun_normal, use_skip_connections=False, name='tcn1')(i) 
+>>>>>>> ffc647349d466eea01eb25c825a8c0f3e1fd9083
 o = Flatten()(o)
 o = Dense(2, name='output_layer')(o)
 
@@ -75,6 +88,10 @@ tensorboard = ExtendedTensorBoard(log_dir=log_dir, histogram_freq=1,write_graph=
 modelcheckpoint = ModelCheckpoint(model_path, monitor = 'val_loss', save_best_only = True)
 earlystopping = EarlyStopping(monitor='val_loss', restore_best_weights=True, patience=500)
 
+<<<<<<< HEAD
 model.fit(X, Y, epochs = 50000, batch_size = 16384, validation_data = (X_val, Y_val), verbose=2, callbacks = [tensorboard, modelcheckpoint, earlystopping])
+=======
+model.fit(X, Y, epochs = 5000, batch_size = 16384, validation_data = (X_val, Y_val), verbose=2, callbacks = [tensorboard, modelcheckpoint, earlystopping])
+>>>>>>> ffc647349d466eea01eb25c825a8c0f3e1fd9083
 
 

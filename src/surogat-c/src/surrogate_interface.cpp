@@ -51,6 +51,22 @@ void surro_init(int* n_qpoints, char* model_path, char* conf_file)
   init_stretch_value = surro_scale_range*(1.0 - surro_data_min[1])/surro_data_range[1] + surro_scale_min;
   init_stress_value = surro_scale_range*(0.0 - surro_data_min[2])/surro_data_range[2] + surro_scale_min;
   init_dstress_value = surro_scale_range*(0.0 - surro_data_min[3])/surro_data_range[3] + surro_scale_min;
+  
+	for(int iqpoint = 0; iqpoint < surro_nqpoints; iqpoint++)  
+	{
+		int tmp_vec_index = iqpoint*ntimesteps*nfeatures + (ntimesteps-1)*nfeatures;
+		surro_input_values[tmp_vec_index + nfeatures - 2]  = init_stress_value;
+		surro_input_values[tmp_vec_index + nfeatures - 1]  = init_dstress_value;		
+		
+		for(int istep = 0; istep < ntimesteps-1; istep++)
+		{
+			tmp_vec_index = iqpoint*ntimesteps*nfeatures + istep*nfeatures;
+			surro_input_values[tmp_vec_index] = init_act_value; 
+			surro_input_values[tmp_vec_index + 1] = init_stretch_value;
+			surro_input_values[tmp_vec_index + 2] = init_stress_value;
+			surro_input_values[tmp_vec_index + 3] = init_dstress_value;
+		} 
+	}		
 	
   // load surro_graph
 	surro_graph = tf_utils::LoadGraph(model_path);
@@ -74,37 +90,21 @@ void surro_init(int* n_qpoints, char* model_path, char* conf_file)
 
 }
 
-void surro_set_values(int * qindex, double* stretch, double* activation, int *fstStepfstIter)
+void surro_set_values(int * qindex, double* stretch, double* activation)
 {
   //printf("%d: %.19lf %.19lf\n",*qindex,*stretch, *activation); // Bogdan:stampa
 	int vec_index = (*qindex)*ntimesteps*nfeatures + (ntimesteps - 1)*nfeatures;
 
-  surro_input_values[vec_index] = surro_scale_range*(*activation - surro_data_min[0])/(surro_data_range[0]) + surro_scale_min;
+    surro_input_values[vec_index] = surro_scale_range*(*activation - surro_data_min[0])/(surro_data_range[0]) + surro_scale_min;
 	surro_input_values[vec_index + 1] = surro_scale_range*(*stretch - surro_data_min[1])/( surro_data_range[1] ) + surro_scale_min;	
  
-  // vector is filled-in for the first time: previous time steps are set to be the same as current step
-	if(*fstStepfstIter == 1)
-	{
-		int tmp_vec_index = (*qindex)*ntimesteps*nfeatures + (ntimesteps-1)*nfeatures;
-		surro_input_values[tmp_vec_index + nfeatures - 2]  = init_stress_value;
-		surro_input_values[tmp_vec_index + nfeatures - 1]  = init_dstress_value;		
-		
-		for(int istep = 0; istep < ntimesteps-1; istep++)
-		{
-			tmp_vec_index = (*qindex)*ntimesteps*nfeatures + istep*nfeatures;
-			surro_input_values[tmp_vec_index] = init_act_value; 
-      surro_input_values[tmp_vec_index + 1] = init_stretch_value;
-      surro_input_values[tmp_vec_index + 2] = init_stress_value;
-      surro_input_values[tmp_vec_index + 3] = init_dstress_value;
-		}
-	}	 
 }
 
 void surro_converged()
 {
 	// shift everything by one time steps
 	int current_step_index, next_step_index, vec_index;
-  double stress, dstress;
+	double stress, dstress;
 	for(int iqpoint = 0; iqpoint < surro_nqpoints; iqpoint++)
 	{		
 		for(int istep = 0; istep < ntimesteps-1; istep++)
@@ -114,19 +114,19 @@ void surro_converged()
 				next_step_index = iqpoint*ntimesteps*nfeatures + (istep+1)*nfeatures + ifeature;
 				surro_input_values[current_step_index] = surro_input_values[next_step_index];
 			}
-		// set appropriate stress values for the last time step 
-		vec_index = iqpoint*ntimesteps*nfeatures + (ntimesteps - 1)*nfeatures;
+	// set appropriate stress values for the last time step 
+	vec_index = iqpoint*ntimesteps*nfeatures + (ntimesteps - 1)*nfeatures;
     
     stress = output_values[iqpoint * ntargets];
     dstress = output_values[iqpoint * ntargets + 1]; 
     
     // printf("converged %.19lf %.19lf\n",(float)stress, (float)dstress);
-	  // scale  
+	 // scale  
     stress =  surro_scale_range*(stress - surro_data_min[nfeatures-2])/surro_data_range[nfeatures-2]  + surro_scale_min;
     dstress =  surro_scale_range*(dstress - surro_data_min[nfeatures-1])/surro_data_range[nfeatures-1] + surro_scale_min; 
         
-		surro_input_values[vec_index + 2] = stress;
-		surro_input_values[vec_index + 3] = dstress;	    
+	surro_input_values[vec_index + 2] = stress;
+	surro_input_values[vec_index + 3] = dstress;	    
     
 	}
 	

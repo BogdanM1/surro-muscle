@@ -24,7 +24,11 @@ target_columns  = [7, 8]
 time_series_steps = 5
 time_series_feature_columns = np.array([2, 4, 5, 6]) 
 
+<<<<<<< HEAD
 stress_scale = 50.0
+=======
+stress_scale = 30.0
+>>>>>>> ffc647349d466eea01eb25c825a8c0f3e1fd9083
 scale_min = 0.0
 scale_max = 1.0
 scale_range = scale_max - scale_min
@@ -92,3 +96,7 @@ def InputToTimeSeries(data, converged = None):
         
 optimizer=tfa.optimizers.RectifiedAdam(lr=1e-3, beta_1=0.99, beta_2=0.9999, clipnorm=1e-4)
 loss = tf.keras.losses.Huber(58e-6)
+<<<<<<< HEAD
+=======
+#gpu2
+>>>>>>> ffc647349d466eea01eb25c825a8c0f3e1fd9083

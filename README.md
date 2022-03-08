@@ -11,7 +11,7 @@ Data-driven surrogate model of the Huxley muscle model based on Gated Recurrent 
    
    **initialize.py** is used to convert data to time series and initialize variables for training
    
-   ** *Train.py ** files are used to create the models and train them
+   ** Train.py ** files are used to create the models and train them
    
    **convert_h5_to_pb.py** is used to convert saved model to pb file which can be loaded into C++ code. 
    
